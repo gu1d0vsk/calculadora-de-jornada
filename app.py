@@ -2,19 +2,20 @@ import streamlit as st
 import datetime
 
 # --- Configuração da Página e Estilos ---
-st.set_page_config(page_title="Calculadora de Horários", layout="wide")
+st.set_page_config(page_title="Calculadora de Jornada")
 
 st.markdown("""
     <style>
     .reportview-container .main {
         background-color: #262730;
         color: white;
+        max-width: 800px;
+        margin: auto;
     }
     .stApp {
         background-color: #262730;
     }
     .st-bu, .st-b5 {
-        background-color: #262730 !important;
         border-radius: 15px;
         padding: 20px;
     }
@@ -33,7 +34,6 @@ st.markdown("""
         border-radius: 15px;
         padding: 10px;
         margin-bottom: 20px;
-        max-width: 350px; /* Definindo a largura máxima para os quadros */
         width: 100%;
     }
     .st-c5 {
@@ -52,6 +52,17 @@ st.markdown("""
     }
     .stMarkdown p {
         font-size: 16px;
+    }
+    /* Estilo para a cor dos títulos principais */
+    h1 {
+        color: rgb(255, 75, 75);
+    }
+    /* Estilo para a cor do botão */
+    .stButton>button {
+        background-color: rgb(92, 228, 136);
+        color: black;
+        border: none;
+        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -90,7 +101,7 @@ def calcular_tempo_nucleo(entrada, saida, saida_almoco, retorno_almoco):
     return max(0, tempo_liquido_nucleo)
 
 # --- Interface e Lógica Principal ---
-st.header("Calculadora de Horários de Trabalho")
+st.title("Calculadora de Horários de Trabalho")
 st.markdown("Calcule seu horário de trabalho ideal e acompanhe a conformidade com as políticas da empresa")
 
 col_entrada, col_previsao = st.columns(2)
@@ -168,7 +179,7 @@ with col_previsao:
                     st.info("Aguardando cálculo")
             
             except ValueError:
-                st.error("Formato de hora inválido. O formato deve ser HHMM ou HH:MM.")
+                st.error("Formato de hora inválido.")
 
 # --- Footer com cards de informação ---
 st.markdown("---")
