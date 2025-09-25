@@ -54,11 +54,21 @@ st.markdown("""
     /* Estiliza o título principal (h1) */
     h1 {
         color: rgb(255, 75, 75);
+        font-size: 2.5rem; /* Ajusta o tamanho do título */
+    }
+    /* Estiliza o subtítulo (h2) */
+    h2 {
+        color: gray;
+        font-size: 1.5rem; /* Ajusta o tamanho e a cor do subtítulo */
     }
     /* Estiliza o botão de cálculo */
     .stButton > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF; /* Cor do texto para melhor contraste */
+    }
+    /* Arredonda as caixas de input de texto */
+    .stTextInput input {
+        border-radius: 1.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -197,5 +207,4 @@ if st.button("Calcular"):
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
-
 
