@@ -82,7 +82,8 @@ st.markdown("""
 .st-at {
     border-top-left-radius: 1.5rem;
 }
-    .st-emotion-cache-1anq8dj {border-radius: 1.25rem; align-self: center;}
+    .st-emotion-cache-1anq8dj {border-radius: 1.25rem; }
+    .st-emotion-cache-zh2fnc {align-self: center;}
     .st-emotion-cache-1weic72 {justify-content: center;}
 
 """, unsafe_allow_html=True)
