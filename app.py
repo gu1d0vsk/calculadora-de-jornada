@@ -67,6 +67,7 @@ st.markdown("""
 st.title("Calculadora de Jornada de Trabalho")
 st.subheader("Informe seus horários para calcular a jornada diária")
 
+# Layout dos campos de entrada otimizado para desktop e mobile
 with st.container():
     entrada_str = st.text_input("Entrada", key="entrada")
     col1, col2 = st.columns(2)
@@ -108,16 +109,25 @@ if st.button("Calcular"):
             """)
             
             # --- Parte 2: Resumo do dia (se houver dados de saída) ---
-            if saida_almoco_str and retorno_almoco_str and saida_real_str:
-                saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
-                retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
+            if saida_real_str:
                 hora_saida_real = datetime.datetime.strptime(formatar_hora_input(saida_real_str), "%H:%M")
                 
-                if retorno_almoco < saida_almoco or hora_saida_real < hora_entrada:
-                    st.error("Verifique a ordem dos horários. A saída deve ser depois da entrada.")
+                if hora_saida_real < hora_entrada:
+                    st.error("Verifique a ordem dos horários. A Saída deve ser depois da Entrada.")
                     st.stop()
-                
-                duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
+
+                saida_almoco = None
+                retorno_almoco = None
+                duracao_almoco_minutos_real = 0
+
+                if saida_almoco_str and retorno_almoco_str:
+                    saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
+                    retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
+                    if retorno_almoco < saida_almoco:
+                        st.error("A volta do almoço deve ser depois da saída para o almoço.")
+                        st.stop()
+                    duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
+
                 trabalho_bruto_minutos = (hora_saida_real - hora_entrada).total_seconds() / 60
                 
                 min_intervalo_real = 15 if trabalho_bruto_minutos < 360 else 30
@@ -142,12 +152,19 @@ if st.button("Calcular"):
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
-                st.markdown(f"""
+                # Monta a string do resumo dinamicamente
+                resumo_texto = f"""
                 - **Tempo total trabalhado:** {horas_trabalhadas}h e {minutos_trabalhados}min
-                - **Tempo de {termo_intervalo_real}:** {duracao_almoco_minutos_real:.0f}min
+                """
+                if duracao_almoco_minutos_real > 0:
+                    resumo_texto += f"- **Tempo de {termo_intervalo_real}:** {duracao_almoco_minutos_real:.0f}min\n"
+                
+                resumo_texto += f"""
                 - **Saldo do dia:** {saldo_string}
                 - **Tempo no núcleo (9h-18h):** {int(tempo_nucleo_minutos // 60)}h e {int(tempo_nucleo_minutos % 60)}min
-                """)
+                """
+                st.markdown(resumo_texto)
+
 
                 if tempo_nucleo_minutos < 300: # 5 horas = 300 minutos
                     st.warning("Atenção: Não cumpriu as 5h obrigatórias no período núcleo.")
