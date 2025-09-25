@@ -130,7 +130,17 @@ if st.button("Calcular"):
 
                 trabalho_bruto_minutos = (hora_saida_real - hora_entrada).total_seconds() / 60
                 
-                min_intervalo_real = 15 if trabalho_bruto_minutos < 360 else 30
+                # Define o intervalo mínimo e o termo apropriado com base na jornada bruta
+                if trabalho_bruto_minutos > 360: # Acima de 6h
+                    min_intervalo_real = 30
+                    termo_intervalo_real = "almoço"
+                elif trabalho_bruto_minutos > 240: # De 4h a 6h
+                    min_intervalo_real = 15
+                    termo_intervalo_real = "intervalo"
+                else: # Até 4h
+                    min_intervalo_real = 0
+                    termo_intervalo_real = "intervalo"
+
                 duracao_almoço_para_calculo = max(min_intervalo_real, duracao_almoco_minutos_real)
                     
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
@@ -147,8 +157,6 @@ if st.button("Calcular"):
                 saldo_minutos = int(abs(saldo_banco_horas_minutos) % 60)
                 saldo_texto = f"{saldo_horas}h e {saldo_minutos}min"
                 saldo_string = f"Saldo positivo de {saldo_texto}" if saldo_banco_horas_minutos >= 0 else f"Saldo negativo de {saldo_texto}"
-                
-                termo_intervalo_real = "intervalo" if trabalho_bruto_minutos < 360 else "almoço"
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
@@ -171,7 +179,7 @@ if st.button("Calcular"):
 
                 # Avisos de permanência não autorizada
                 aviso_nao_autorizado = ""
-                if duracao_almoco_minutos_real < min_intervalo_real:
+                if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
                     aviso_nao_autorizado += f"\n- {termo_intervalo_real.capitalize()} foi inferior a {min_intervalo_real} minutos."
                 if trabalho_liquido_minutos > 600: # 10 horas = 600 minutos
                     aviso_nao_autorizado += "\n- Jornada de trabalho excedeu 10 horas."
