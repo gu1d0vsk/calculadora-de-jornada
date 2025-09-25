@@ -53,7 +53,7 @@ st.markdown("""
     }
     /* Estiliza o título principal customizado */
     .main-title {
-        color: rgb(255, 75, 75);
+        
         font-size: 2.5rem !important;
         font-weight: bold;
     }
