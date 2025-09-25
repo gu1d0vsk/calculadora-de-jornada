@@ -53,7 +53,6 @@ st.markdown("""
     }
     /* Estiliza o título principal customizado */
     .main-title {
-        
         font-size: 2.5rem !important;
         font-weight: bold;
     }
@@ -62,28 +61,27 @@ st.markdown("""
         color: gray;
         font-size: 1.5rem !important;
     }
+    /* Centraliza o container do botão */
+    div[data-testid="stButton"] {
+        display: flex;
+        justify-content: center;
+    }
     /* Estiliza o botão de cálculo */
     div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF;
     }
-    /* Arredonda as caixas de input de texto */
+    /* Centraliza os labels (títulos) dos inputs */
+    div[data-testid="stTextInput"] label {
+        display: block;
+        text-align: center;
+    }
+    /* Arredonda e centraliza o texto das caixas de input */
     div[data-testid="stTextInput"] input {
-        border-radius: 1.5rem !important;}
-        .st-aw {
-    border-bottom-right-radius: 1.5rem;
-}
-.st-av {
-    border-top-right-radius: 1.5rem;
-}
-.st-au {
-    border-bottom-left-radius: 1.5rem;
-}
-.st-at {
-    border-top-left-radius: 1.5rem;
-}
-    
-
+        border-radius: 1.5rem !important;
+        text-align: center;
+    }
+</style>
 """, unsafe_allow_html=True)
 
 
