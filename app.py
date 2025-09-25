@@ -130,17 +130,21 @@ if st.button("Calcular"):
 
                 trabalho_bruto_minutos = (hora_saida_real - hora_entrada).total_seconds() / 60
                 
-                # Define o intervalo mínimo e o termo apropriado com base na jornada bruta
-                if trabalho_bruto_minutos > 360: # Acima de 6h
+                # Calcula o tempo de trabalho real (descontando o intervalo tirado) para determinar o intervalo obrigatório
+                tempo_trabalhado_efetivo = trabalho_bruto_minutos - duracao_almoco_minutos_real
+
+                # Define o intervalo mínimo e o termo apropriado com base na jornada efetivamente trabalhada
+                if tempo_trabalhado_efetivo > 360: # Acima de 6h de trabalho
                     min_intervalo_real = 30
                     termo_intervalo_real = "almoço"
-                elif trabalho_bruto_minutos > 240: # De 4h a 6h
+                elif tempo_trabalhado_efetivo > 240: # De 4h a 6h de trabalho
                     min_intervalo_real = 15
                     termo_intervalo_real = "intervalo"
-                else: # Até 4h
+                else: # Até 4h de trabalho
                     min_intervalo_real = 0
                     termo_intervalo_real = "intervalo"
 
+                # Para o cálculo do saldo, deduzimos o maior valor entre o intervalo tirado e o obrigatório.
                 duracao_almoço_para_calculo = max(min_intervalo_real, duracao_almoco_minutos_real)
                     
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
@@ -193,4 +197,5 @@ if st.button("Calcular"):
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
+
 
