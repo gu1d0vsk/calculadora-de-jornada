@@ -51,31 +51,32 @@ st.markdown("""
     .main .block-container {
         max-width: 800px;
     }
-    /* Estiliza o título principal (h1) */
-    h1 {
+    /* Estiliza o título principal customizado */
+    .main-title {
         color: rgb(255, 75, 75);
-        font-size: 2.5rem; /* Ajusta o tamanho do título */
+        font-size: 2.5rem;
+        font-weight: bold;
     }
-    /* Estiliza o subtítulo (h2) */
-    h2 {
+    /* Estiliza o subtítulo customizado */
+    .sub-title {
         color: gray;
-        font-size: 1.5rem; /* Ajusta o tamanho e a cor do subtítulo */
+        font-size: 1.5rem;
     }
     /* Estiliza o botão de cálculo */
-    .stButton > button {
+    div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
-        color: #FFFFFF; /* Cor do texto para melhor contraste */
+        color: #FFFFFF;
     }
     /* Arredonda as caixas de input de texto */
-    .stTextInput input {
+    div[data-testid="stTextInput"] input {
         border-radius: 1.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-st.title("Calculadora de Jornada de Trabalho")
-st.subheader("Informe seus horários para calcular a jornada diária")
+st.markdown('<p class="main-title">Calculadora de Jornada de Trabalho</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Informe seus horários para calcular a jornada diária</p>', unsafe_allow_html=True)
 
 # Layout dos campos de entrada otimizado para desktop e mobile
 with st.container():
