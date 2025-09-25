@@ -54,13 +54,13 @@ st.markdown("""
     /* Estiliza o título principal customizado */
     .main-title {
         color: rgb(255, 75, 75);
-        font-size: 2.5rem;
+        font-size: 2.5rem !important;
         font-weight: bold;
     }
     /* Estiliza o subtítulo customizado */
     .sub-title {
         color: gray;
-        font-size: 1.5rem;
+        font-size: 1.5rem !important;
     }
     /* Estiliza o botão de cálculo */
     div[data-testid="stButton"] > button {
@@ -69,7 +69,7 @@ st.markdown("""
     }
     /* Arredonda as caixas de input de texto */
     div[data-testid="stTextInput"] input {
-        border-radius: 1.5rem;
+        border-radius: 1.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
