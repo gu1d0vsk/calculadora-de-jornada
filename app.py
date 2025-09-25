@@ -56,7 +56,7 @@ if st.button("Calcular"):
         hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
 
         # Determina a duração do almoço/intervalo para as previsões
-        duracao_almoço_previsao = 30
+        duracao_almoço_previsao = 0 # Valor inicial corrigido
         if saida_almoco_str and retorno_almoco_str:
             saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
             retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
