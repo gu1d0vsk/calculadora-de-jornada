@@ -53,13 +53,14 @@ st.markdown("""
     }
     /* Estiliza o título principal customizado */
     .main-title {
-        
         font-size: 2.2rem !important;
         font-weight: bold;
+        justify-self: center;
     }
     /* Estiliza o subtítulo customizado */
     .sub-title {
         color: gray;
+        justify-self: center;
         font-size: 1.5rem !important;
     }
     /* Estiliza o botão de cálculo */
