@@ -54,7 +54,7 @@ st.markdown("""
     /* Estiliza o título principal customizado */
     .main-title {
         
-        font-size: 2.5rem !important;
+        font-size: 2.2rem !important;
         font-weight: bold;
     }
     /* Estiliza o subtítulo customizado */
@@ -82,7 +82,7 @@ st.markdown("""
 .st-at {
     border-top-left-radius: 1.5rem;
 }
-    
+    .st-emotion-cache-1anq8dj {border-radius: 1.25rem;}
 
 """, unsafe_allow_html=True)
 
