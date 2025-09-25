@@ -42,7 +42,7 @@ def calcular_tempo_nucleo(entrada, saida, saida_almoco, retorno_almoco):
     return max(0, tempo_liquido_nucleo)
 
 # --- Interface do Web App com Streamlit ---
-st.set_page_config(page_title="Calculadora de Jornada", layout="wide")
+st.set_page_config(page_title="Calculadora de Jornada", layout="centered")
 
 # Injeção de CSS para customização
 st.markdown("""
