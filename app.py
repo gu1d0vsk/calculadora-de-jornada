@@ -61,15 +61,11 @@ st.markdown("""
         color: gray;
         font-size: 1.5rem !important;
     }
-    /* Centraliza o container do botão */
-    div[data-testid="stButton"] {
-        display: flex;
-        justify-content: center;
-    }
     /* Estiliza o botão de cálculo */
     div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF;
+        width: 100%;
     }
     /* Centraliza os labels (títulos) dos inputs */
     div[data-testid="stTextInput"] label {
@@ -98,8 +94,13 @@ with st.container():
         retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
     saida_real_str = st.text_input("Saída", key="saida_real")
 
+# Botão centralizado usando o sistema de colunas do Streamlit
+_, center_col, _ = st.columns([2, 3, 2])
+with center_col:
+    calculate_clicked = st.button("Calcular")
 
-if st.button("Calcular"):
+
+if calculate_clicked:
     if not entrada_str:
         st.warning("Por favor, preencha pelo menos o horário de entrada.")
     else:
