@@ -75,6 +75,9 @@ st.markdown("""
         .st-bv {
     font-weight: 600;
 }
+.st-ay {
+    font-size: 1.3rem;
+}
         .st-aw {
     border-bottom-right-radius: 1.5rem;
 }
