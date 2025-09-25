@@ -71,9 +71,9 @@ with st.container():
     col1, col2 = st.columns(2)
     with col1:
         entrada_str = st.text_input("Entrada", key="entrada")
-        saida_almoco_str = st.text_input("Saída Almoço", key="saida_almoco")
-    with col2:
         retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
+    with col2:
+        saida_almoco_str = st.text_input("Saída Almoço", key="saida_almoco")
         saida_real_str = st.text_input("Saída", key="saida_real")
 
 if st.button("Calcular"):
@@ -167,4 +167,3 @@ if st.button("Calcular"):
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
-
