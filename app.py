@@ -33,6 +33,8 @@ st.markdown("""
         border-radius: 15px;
         padding: 10px;
         margin-bottom: 20px;
+        max-width: 350px; /* Definindo a largura máxima para os quadros */
+        width: 100%;
     }
     .st-c5 {
         background-color: #2f2f3f;
@@ -40,6 +42,16 @@ st.markdown("""
     .st-c6 {
         border: 2px solid #5a5a66;
         border-radius: 15px;
+    }
+    /* Estilo para aumentar a fonte dos campos de texto e labels */
+    .stTextInput>div>div>input {
+        font-size: 16px;
+    }
+    .stTextInput>label {
+        font-size: 18px !important;
+    }
+    .stMarkdown p {
+        font-size: 16px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -86,17 +98,16 @@ col_entrada, col_previsao = st.columns(2)
 with col_entrada:
     st.markdown("## ✍️ Entrada de Horários")
     with st.container(border=True):
-        hora_entrada_str = st.text_input("Horário de Entrada", placeholder="HHMM ou HH:MM")
-        st.markdown("<small><i>Digite no formato HH:MM ou HHMM</i></small>", unsafe_allow_html=True)
+        hora_entrada_str = st.text_input("Horário de Entrada", placeholder="HH:MM ou HHMM")
         
         st.markdown("---")
         
-        saida_almoco_str = st.text_input("Início do Almoço", placeholder="HHMM ou HH:MM")
-        retorno_almoco_str = st.text_input("Fim do Almoço", placeholder="HHMM ou HH:MM")
+        saida_almoco_str = st.text_input("Início do Almoço", placeholder="HH:MM ou HHMM")
+        retorno_almoco_str = st.text_input("Fim do Almoço", placeholder="HH:MM ou HHMM")
         
         st.markdown("---")
         
-        saida_real_str = st.text_input("Horário de Saída", placeholder="HHMM ou HH:MM")
+        saida_real_str = st.text_input("Horário de Saída", placeholder="HH:MM ou HHMM")
         st.markdown("<small><i>Opcional - para calcular o resumo real de trabalho</i></small>", unsafe_allow_html=True)
         
         st.markdown("---")
@@ -134,9 +145,9 @@ with col_previsao:
                 hora_saida_8h = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
                 hora_saida_10h = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
 
-                st.metric("Mínimo (5h)", f"{hora_saida_5h.strftime('%H:%M')}", f"{minutos_intervalo_5h:.0f}min de intervalo")
-                st.metric("Equilibrado (8h)", f"{hora_saida_8h.strftime('%H:%M')}", f"{minutos_intervalo_demais:.0f}min de almoço")
-                st.metric("Máximo (10h)", f"{hora_saida_10h.strftime('%H:%M')}", f"{minutos_intervalo_demais:.0f}min de almoço")
+                st.markdown(f"**Mínimo (5h)**\n{hora_saida_5h.strftime('%H:%M')}\n<small>{minutos_intervalo_5h:.0f}min de intervalo</small>", unsafe_allow_html=True)
+                st.markdown(f"**Equilibrado (8h)**\n{hora_saida_8h.strftime('%H:%M')}\n<small>{minutos_intervalo_demais:.0f}min de almoço</small>", unsafe_allow_html=True)
+                st.markdown(f"**Máximo (10h)**\n{hora_saida_10h.strftime('%H:%M')}\n<small>{minutos_intervalo_demais:.0f}min de almoço</small>", unsafe_allow_html=True)
                 
                 st.markdown("---")
                 
