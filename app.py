@@ -70,11 +70,11 @@ st.subheader("Informe seus horários para calcular a jornada diária")
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        entrada_str = st.text_input("Entrada (HHMM ou HH:MM):", key="entrada")
-        saida_almoco_str = st.text_input("Saída Almoço (HHMM ou HH:MM):", key="saida_almoco")
+        entrada_str = st.text_input("Entrada", key="entrada")
+        saida_almoco_str = st.text_input("Saída Almoço", key="saida_almoco")
     with col2:
-        retorno_almoco_str = st.text_input("Volta Almoço (HHMM ou HH:MM):", key="retorno_almoco")
-        saida_real_str = st.text_input("Saída (HHMM ou HH:MM):", key="saida_real")
+        retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
+        saida_real_str = st.text_input("Saída", key="saida_real")
 
 if st.button("Calcular"):
     if not entrada_str:
@@ -167,3 +167,4 @@ if st.button("Calcular"):
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
+
