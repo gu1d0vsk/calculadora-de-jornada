@@ -53,6 +53,7 @@ st.markdown("""
     }
     /* Estiliza o título principal customizado */
     .main-title {
+        
         font-size: 2.5rem !important;
         font-weight: bold;
     }
@@ -65,19 +66,24 @@ st.markdown("""
     div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF;
-        width: 100%;
     }
-    /* Centraliza os labels (títulos) dos inputs */
-    div[data-testid="stTextInput"] label {
-        display: block;
-        text-align: center;
-    }
-    /* Arredonda e centraliza o texto das caixas de input */
+    /* Arredonda as caixas de input de texto */
     div[data-testid="stTextInput"] input {
-        border-radius: 1.5rem !important;
-        text-align: center;
-    }
-</style>
+        border-radius: 1.5rem !important;}
+        .st-aw {
+    border-bottom-right-radius: 1.5rem;
+}
+.st-av {
+    border-top-right-radius: 1.5rem;
+}
+.st-au {
+    border-bottom-left-radius: 1.5rem;
+}
+.st-at {
+    border-top-left-radius: 1.5rem;
+}
+    
+
 """, unsafe_allow_html=True)
 
 
@@ -94,13 +100,8 @@ with st.container():
         retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
     saida_real_str = st.text_input("Saída", key="saida_real")
 
-# Botão centralizado usando o sistema de colunas do Streamlit
-_, center_col, _ = st.columns([2, 3, 2])
-with center_col:
-    calculate_clicked = st.button("Calcular")
 
-
-if calculate_clicked:
+if st.button("Calcular"):
     if not entrada_str:
         st.warning("Por favor, preencha pelo menos o horário de entrada.")
     else:
@@ -219,4 +220,3 @@ if calculate_clicked:
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
-
