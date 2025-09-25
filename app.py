@@ -71,7 +71,7 @@ st.markdown("""
     div[data-testid="stTextInput"] input {
         border-radius: 1.5rem !important;}
         .st-aw {
-    border-bottom-right-radius: 0.5rem;
+    border-bottom-right-radius: 1.5rem;
 }
 .st-av {
     border-top-right-radius: 1.5rem;
