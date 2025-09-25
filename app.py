@@ -72,6 +72,9 @@ st.markdown("""
     /* Arredonda as caixas de input de texto */
     div[data-testid="stTextInput"] input {
         border-radius: 1.5rem !important;}
+        .st-bv {
+    font-weight: 600;
+}
         .st-aw {
     border-bottom-right-radius: 1.5rem;
 }
