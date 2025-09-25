@@ -87,7 +87,7 @@ st.markdown("""
     .st-emotion-cache-1anq8dj {border-radius: 1.25rem; }
     .st-emotion-cache-zh2fnc {align-self: center;}
     .st-emotion-cache-1weic72 {justify-content: center;}
-    input#text_input_1 {place-items: center;}
+    input {place-items: center;}
 
 """, unsafe_allow_html=True)
 
