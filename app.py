@@ -94,6 +94,7 @@ st.markdown("""
     .st-emotion-cache-zh2fnc {align-self: center;}
     .st-emotion-cache-1weic72 {justify-content: center;}
     input {place-items: center;}
+    .st-emotion-cache-467cry p {text-align: center;}
 
 """, unsafe_allow_html=True)
 
