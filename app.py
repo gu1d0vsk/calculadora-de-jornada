@@ -177,9 +177,9 @@ if calculate_clicked:
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
             st.markdown(f"""
-            **Mínimo {texto_desc_5h}:** {hora_saida_5h.strftime('%H:%M')} (com {minutos_intervalo_5h:.0f}min de intervalo)<br>
-            **Jornada Padrão {texto_desc_8h}:** {hora_saida_8h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)<br>
-            **Máximo {texto_desc_10h}:** {hora_saida_10h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
+            **Mínimo {texto_desc_5h}:** {hora_saida_5h.strftime('%H:%M')} ({minutos_intervalo_5h:.0f}min de intervalo)<br>
+            **Jornada Padrão {texto_desc_8h}:** {hora_saida_8h.strftime('%H:%M')} ({minutos_intervalo_demais:.0f}min de almoço)<br>
+            **Máximo {texto_desc_10h}:** {hora_saida_10h.strftime('%H:%M')} ({minutos_intervalo_demais:.0f}min de almoço)
             """, unsafe_allow_html=True)
             
             # --- Parte 2: Resumo do dia (se houver dados de saída) ---
@@ -234,7 +234,11 @@ if calculate_clicked:
                 saldo_horas = int(abs(saldo_banco_horas_minutos) // 60)
                 saldo_minutos = int(abs(saldo_banco_horas_minutos) % 60)
                 saldo_texto = f"{saldo_horas}h e {saldo_minutos}min"
-                saldo_string = f"Saldo positivo de {saldo_texto}" if saldo_banco_horas_minutos >= 0 else f"Saldo negativo de {saldo_texto}"
+                if saldo_banco_horas_minutos >= 0:
+                    saldo_string = f'<span style="color:rgb(92, 228, 136)">+ {saldo_texto}</span>'
+                else:
+                    saldo_string = f'<span style="color:rgb(255, 108, 108)">- {saldo_texto}</span>'
+
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
