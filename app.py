@@ -110,6 +110,13 @@ st.markdown("""
     .st-emotion-cache-467cry h3 { text-align: center; } /* Centraliza os headers */
     .st-emotion-cache-467cry p { text-align: center; }
     .st-emotion-cache-ubko3j svg, .st-emotion-cache-gquqoo { display: none !important; }
+     .st-bv {    font-weight: 600;}
+.st-ay {    font-size: 1.3rem;}
+        .st-aw {    border-bottom-right-radius: 1.5rem;}
+.st-av {    border-top-right-radius: 1.5rem;}
+.st-au {    border-bottom-left-radius: 1.5rem;}
+.st-at {    border-top-left-radius: 1.5rem;}
+
 
 </style>
 """, unsafe_allow_html=True)
