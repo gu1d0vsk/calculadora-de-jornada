@@ -73,10 +73,20 @@ st.markdown("""
         text-align: center;
         font-size: 1.5rem !important;
     }
+
+    /* Centraliza e anima o botão para evitar o 'salto' */
+    div[data-testid="stButton"] {
+        display: flex;
+        justify-content: center;
+        opacity: 0;
+        animation: fadeInSmooth 0.5s ease-out 0.1s forwards;
+    }
+
     /* Estiliza o botão de cálculo */
     div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF;
+        width: 50%; /* Define uma largura para o botão */
     }
     /* Arredonda as caixas de input de texto */
     div[data-testid="stTextInput"] input {
@@ -88,7 +98,7 @@ st.markdown("""
         width: 100%;
     }
 
-    /* Animação de fade-in */
+    /* Animação de fade-in para os resultados */
     .results-container {
         animation: fadeIn 0.5s ease-out forwards;
     }
@@ -103,6 +113,12 @@ st.markdown("""
         }
     }
     
+    /* Animação de fade-in para o botão */
+    @keyframes fadeInSmooth {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
     /* Estilos para alertas customizados */
     .custom-warning, .custom-error {
         border-radius: 1.5rem;
@@ -137,7 +153,6 @@ st.markdown("""
     .st-av {    border-top-right-radius: 1.5rem;}
     .st-au {    border-bottom-left-radius: 1.5rem;}
     .st-at {    border-top-left-radius: 1.5rem;}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -155,10 +170,8 @@ with st.container():
         retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
     saida_real_str = st.text_input("Saída", key="saida_real")
 
-# Botão centralizado
-_, center_col, _ = st.columns([2, 3, 2])
-with center_col:
-    calculate_clicked = st.button("Calcular")
+# Botão centralizado via CSS
+calculate_clicked = st.button("Calcular")
 
 # Placeholder para os resultados
 results_placeholder = st.empty()
@@ -274,7 +287,7 @@ if st.session_state.show_results:
                     motivos_texto = "<br>".join(lista_de_avisos)
                     results_html += f"""
                     <div class="custom-error">
-                        <b>‼️ POSSÍVEL PERMANÊNCIA NÃO AUTORIZADA ‼️</b>
+                        <b>‼️ PERMANÊNCIA NÃO AUTORIZADA ‼️</b>
                         <p><b>{motivo_header}:</b></p>
                         <p>{motivos_texto}</p>
                     </div>
