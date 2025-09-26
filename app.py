@@ -106,6 +106,7 @@ st.markdown("""
     .st-emotion-cache-467cry h2 {    text-align: center;}
     .st-emotion-cache-467cry {    text-align: center;}
     .st-emotion-cache-ubko3j svg {    display: none;}
+    .st-emotion-cache-gquqoo {    display: none !important;}
     
 
 """, unsafe_allow_html=True)
