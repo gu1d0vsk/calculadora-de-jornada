@@ -105,19 +105,19 @@ st.markdown("""
     
     /* Estilos para alertas customizados */
     .custom-warning, .custom-error {
-        border-radius: 0.5rem;
+        border-radius: 1.5rem;
         padding: 1rem;
         margin-top: 1rem;
         text-align: center;
         color: #31333f;
     }
     .custom-warning {
-        background-color: #fff9e6;
-        border: 1px solid #ffe599;
+        background-color: rgba(255, 170, 0, 0.15);
+        border: 1px solid #ffaa00;
     }
     .custom-error {
-        background-color: #fff0f0;
-        border: 1px solid #ffb3b3;
+        background-color: rgba(255, 43, 43, 0.15);
+        border: 1px solid #ff2b2b;
     }
     .custom-error p {
         margin: 0.5rem 0 0 0;
@@ -251,10 +251,11 @@ if st.session_state.show_results:
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
-                results_html += f"<p><b>Tempo total trabalhado:</b> {formatar_duracao(trabalho_liquido_minutos)}"
+                results_html += f"<p><b>Total trabalhado:</b> {formatar_duracao(trabalho_liquido_minutos)}"
                 if duracao_almoco_minutos_real > 0:
                     results_html += f"<br><b>Tempo de {termo_intervalo_real}:</b> {duracao_almoco_minutos_real:.0f}min"
-                results_html += f"<br><b>Saldo do dia:</b> {saldo_string}<br><b>Tempo no núcleo (9h-18h):</b> {formatar_duracao(tempo_nucleo_minutos)}</p>"
+                results_html += f"<br><b>Tempo no núcleo (9h-18h):</b> {formatar_duracao(tempo_nucleo_minutos)}"
+                results_html += f"<br><b>Saldo do dia:</b> {saldo_string}</p>"
                 
                 if tempo_nucleo_minutos < 300:
                     results_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
