@@ -102,6 +102,26 @@ st.markdown("""
             transform: translateY(0);
         }
     }
+    
+    /* Estilos para alertas customizados */
+    .custom-warning, .custom-error {
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        text-align: center;
+        color: #31333f;
+    }
+    .custom-warning {
+        background-color: #fff9e6;
+        border: 1px solid #ffe599;
+    }
+    .custom-error {
+        background-color: #fff0f0;
+        border: 1px solid #ffb3b3;
+    }
+    .custom-error p {
+        margin: 0.5rem 0 0 0;
+    }
 
     /* Estilos gerais */
     .st-emotion-cache-1anq8dj {border-radius: 1.25rem; }
@@ -110,13 +130,12 @@ st.markdown("""
     .st-emotion-cache-467cry h3 { text-align: center; } /* Centraliza os headers */
     .st-emotion-cache-467cry p { text-align: center; }
     .st-emotion-cache-ubko3j svg, .st-emotion-cache-gquqoo { display: none !important; }
-     .st-bv {    font-weight: 600;}
-.st-ay {    font-size: 1.3rem;}
-        .st-aw {    border-bottom-right-radius: 1.5rem;}
-.st-av {    border-top-right-radius: 1.5rem;}
-.st-au {    border-bottom-left-radius: 1.5rem;}
-.st-at {    border-top-left-radius: 1.5rem;}
-
+    .st-bv {    font-weight: 600;}
+    .st-ay {    font-size: 1.3rem;}
+    .st-aw {    border-bottom-right-radius: 1.5rem;}
+    .st-av {    border-top-right-radius: 1.5rem;}
+    .st-au {    border-bottom-left-radius: 1.5rem;}
+    .st-at {    border-top-left-radius: 1.5rem;}
 
 </style>
 """, unsafe_allow_html=True)
@@ -238,18 +257,26 @@ if st.session_state.show_results:
                 results_html += f"<br><b>Saldo do dia:</b> {saldo_string}<br><b>Tempo no núcleo (9h-18h):</b> {formatar_duracao(tempo_nucleo_minutos)}</p>"
                 
                 if tempo_nucleo_minutos < 300:
-                    st.warning("Atenção: Não cumpriu as 5h obrigatórias no período núcleo.")
+                    results_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
 
-                aviso_nao_autorizado = ""
+                lista_de_avisos = []
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
-                    aviso_nao_autorizado += f"\n- {termo_intervalo_real.capitalize()} foi inferior a {min_intervalo_real} minutos."
+                    lista_de_avisos.append(f"{termo_intervalo_real.capitalize()} foi inferior a {min_intervalo_real} minutos")
                 if trabalho_liquido_minutos > 600:
-                    aviso_nao_autorizado += "\n- Jornada de trabalho excedeu 10 horas."
+                    lista_de_avisos.append("Jornada de trabalho excedeu 10 horas")
                 if hora_saida_real.time() > datetime.time(20, 0):
-                    aviso_nao_autorizado += "\n- Saída registrada após as 20h."
+                    lista_de_avisos.append("Saída registrada após as 20h")
 
-                if aviso_nao_autorizado:
-                    st.error(f"‼️ ATENÇÃO: POSSÍVEL PERMANÊNCIA NÃO AUTORIZADA ‼️\n**Motivos:**{aviso_nao_autorizado}")
+                if lista_de_avisos:
+                    motivo_header = "Motivo" if len(lista_de_avisos) == 1 else "Motivos"
+                    motivos_texto = "<br>".join(lista_de_avisos)
+                    results_html += f"""
+                    <div class="custom-error">
+                        <b>‼️ POSSÍVEL PERMANÊNCIA NÃO AUTORIZADA ‼️</b>
+                        <p><b>{motivo_header}:</b></p>
+                        <p>{motivos_texto}</p>
+                    </div>
+                    """
 
             results_html += "</div>"
             
