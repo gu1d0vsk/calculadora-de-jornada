@@ -116,8 +116,8 @@ st.markdown("""
         border: 1px solid #ffaa00;
     }
     .custom-error {
-        background-color: rgba(255, 43, 43, 0.15);
-        border: 1px solid #ff2b2b;
+        background-color: rgba(255, 108, 108, 0.15);
+        border: 1px solid rgb(255, 108, 108);
     }
     .custom-error p {
         margin: 0.5rem 0 0 0;
