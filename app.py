@@ -86,7 +86,7 @@ st.markdown("""
     div[data-testid="stButton"] > button {
         background-color: rgb(92, 228, 136);
         color: #FFFFFF;
-        width: 50%; /* Define uma largura para o botão */
+        width: 100%;
     }
     /* Arredonda as caixas de input de texto */
     div[data-testid="stTextInput"] input {
