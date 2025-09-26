@@ -175,10 +175,10 @@ if calculate_clicked:
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
             st.markdown(f"""
-            - **Mínimo {texto_desc_5h}:** {hora_saida_5h.strftime('%H:%M')} (com {minutos_intervalo_5h:.0f}min de intervalo)
-            - **Jornada Padrão {texto_desc_8h}:** {hora_saida_8h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
-            - **Máximo {texto_desc_10h}:** {hora_saida_10h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
-            """)
+            **Mínimo {texto_desc_5h}:** {hora_saida_5h.strftime('%H:%M')} (com {minutos_intervalo_5h:.0f}min de intervalo)<br>
+            **Jornada Padrão {texto_desc_8h}:** {hora_saida_8h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)<br>
+            **Máximo {texto_desc_10h}:** {hora_saida_10h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
+            """, unsafe_allow_html=True)
             
             # --- Parte 2: Resumo do dia (se houver dados de saída) ---
             if saida_real_str:
@@ -237,17 +237,15 @@ if calculate_clicked:
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
                 # Monta a string do resumo dinamicamente
-                resumo_texto = f"""
-                - **Tempo total trabalhado:** {horas_trabalhadas}h e {minutos_trabalhados}min
-                """
+                resumo_texto = f"**Tempo total trabalhado:** {horas_trabalhadas}h e {minutos_trabalhados}min"
                 if duracao_almoco_minutos_real > 0:
-                    resumo_texto += f"- **Tempo de {termo_intervalo_real}:** {duracao_almoco_minutos_real:.0f}min\n"
+                    resumo_texto += f"<br>**Tempo de {termo_intervalo_real}:** {duracao_almoco_minutos_real:.0f}min"
                 
                 resumo_texto += f"""
-                - **Saldo do dia:** {saldo_string}
-                - **Tempo no núcleo (9h-18h):** {int(tempo_nucleo_minutos // 60)}h e {int(tempo_nucleo_minutos % 60)}min
+                <br>**Saldo do dia:** {saldo_string}
+                <br>**Tempo no núcleo (9h-18h):** {int(tempo_nucleo_minutos // 60)}h e {int(tempo_nucleo_minutos % 60)}min
                 """
-                st.markdown(resumo_texto)
+                st.markdown(resumo_texto, unsafe_allow_html=True)
 
 
                 if tempo_nucleo_minutos < 300: # 5 horas = 300 minutos
