@@ -55,40 +55,7 @@ st.set_page_config(page_title="Calculadora de Jornada", layout="centered")
 # Injeção de CSS para customização
 st.markdown("""
 <style>
-     /* Animação de fade-in com blur */
-    .results-container {
-        animation: fadeInBlur 0.6s ease-out forwards;
-    }
-    @keyframes fadeInBlur {
-        from {
-            opacity: 0;
-            filter: blur(5px);
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            filter: blur(0px);
-            transform: translateY(0);
-        }
-    }
-    /* Estilos customizados para alertas */
-    .custom-warning {
-        background-color: #fff9e6;
-        border: 1px solid #ffe599;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        margin-top: 1rem;
-        color: #31333f;
-    }
-    .custom-error {
-        background-color: #fff0f0;
-        border: 1px solid #ffb3b3;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        margin-top: 1rem;
-        color: #31333f;
-    }
-  /* Limita a largura do container principal */
+    /* Limita a largura do container principal */
     .main .block-container {
         max-width: 800px;
     }
@@ -140,11 +107,8 @@ st.markdown("""
     .st-emotion-cache-467cry {    text-align: center;}
     .st-emotion-cache-ubko3j svg {    display: none;}
     .st-emotion-cache-gquqoo {    display: none !important;}
-
-
-
     
-</style>
+
 """, unsafe_allow_html=True)
 
 
@@ -171,58 +135,60 @@ if calculate_clicked:
     if not entrada_str:
         st.warning("Por favor, preencha pelo menos o horário de entrada.")
     else:
-        results_placeholder = st.empty() # Cria um placeholder para os resultados
-        
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
-            
-            results_html = ""
 
             # --- Parte 1: Cálculo das previsões ---
-            results_html += "<h3>Previsões de Saída</h3>"
+            st.header("Previsões de Saída")
 
+            # Define o limite máximo de saída como 20h
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
+
             duracao_almoço_previsao = 0
             if saida_almoco_str and retorno_almoco_str:
                 saida_almoco_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
 
+            # Previsão Mínimo
             minutos_intervalo_5h = max(15, duracao_almoço_previsao)
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             hora_base_5h = max(hora_entrada, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
             hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
             
+            # Previsão Padrão
             minutos_intervalo_demais = max(30, duracao_almoço_previsao)
             hora_saida_8h_calculada = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
             hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
 
+            # Previsão Máximo
             hora_saida_10h_calculada = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
             hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
 
+            # Calcula a duração líquida para cada previsão
             duracao_5h_min = (hora_saida_5h - hora_entrada).total_seconds() / 60 - minutos_intervalo_5h
             duracao_8h_min = (hora_saida_8h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
             duracao_10h_min = (hora_saida_10h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
             
+            # Define o texto a ser exibido dentro dos parênteses, condicionalmente
             texto_desc_5h = f"({formatar_duracao(duracao_5h_min)})" if hora_saida_5h_calculada > limite_saida else "(5h no núcleo)"
             texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
-            results_html += f"""
-            <p>
+            st.markdown(f"""
             **Mínimo {texto_desc_5h}:** {hora_saida_5h.strftime('%H:%M')} ({minutos_intervalo_5h:.0f}min de intervalo)<br>
             **Jornada Padrão {texto_desc_8h}:** {hora_saida_8h.strftime('%H:%M')} ({minutos_intervalo_demais:.0f}min de almoço)<br>
             **Máximo {texto_desc_10h}:** {hora_saida_10h.strftime('%H:%M')} ({minutos_intervalo_demais:.0f}min de almoço)
-            </p>
-            """
+            """, unsafe_allow_html=True)
             
             # --- Parte 2: Resumo do dia (se houver dados de saída) ---
             if saida_real_str:
                 hora_saida_real = datetime.datetime.strptime(formatar_hora_input(saida_real_str), "%H:%M")
                 
                 if hora_saida_real < hora_entrada:
-                    raise ValueError("A Saída deve ser depois da Entrada.")
+                    st.error("Verifique a ordem dos horários. A Saída deve ser depois da Entrada.")
+                    st.stop()
 
                 saida_almoco = None
                 retorno_almoco = None
@@ -232,24 +198,38 @@ if calculate_clicked:
                     saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                     retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                     if retorno_almoco < saida_almoco:
-                        raise ValueError("A volta do almoço deve ser depois da saída para o almoço.")
+                        st.error("A volta do almoço deve ser depois da saída para o almoço.")
+                        st.stop()
                     duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
 
                 trabalho_bruto_minutos = (hora_saida_real - hora_entrada).total_seconds() / 60
+                
+                # Calcula o tempo de trabalho real (descontando o intervalo tirado) para determinar o intervalo obrigatório
                 tempo_trabalhado_efetivo = trabalho_bruto_minutos - duracao_almoco_minutos_real
 
-                if tempo_trabalhado_efetivo > 360: min_intervalo_real, termo_intervalo_real = 30, "almoço"
-                elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
-                else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
+                # Define o intervalo mínimo e o termo apropriado com base na jornada efetivamente trabalhada
+                if tempo_trabalhado_efetivo > 360: # Acima de 6h de trabalho
+                    min_intervalo_real = 30
+                    termo_intervalo_real = "almoço"
+                elif tempo_trabalhado_efetivo > 240: # De 4h a 6h de trabalho
+                    min_intervalo_real = 15
+                    termo_intervalo_real = "intervalo"
+                else: # Até 4h de trabalho
+                    min_intervalo_real = 0
+                    termo_intervalo_real = "intervalo"
 
+                # Para o cálculo do saldo, deduzimos o maior valor entre o intervalo tirado e o obrigatório.
                 duracao_almoço_para_calculo = max(min_intervalo_real, duracao_almoco_minutos_real)
+                    
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
                 
                 horas_trabalhadas = int(trabalho_liquido_minutos // 60)
                 minutos_trabalhados = int(trabalho_liquido_minutos % 60)
-                saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
+                
+                saldo_banco_horas_minutos = trabalho_liquido_minutos - 480  # 8 horas = 480 minutos
 
-                results_html += "<h3>Resumo do Dia</h3>"
+                # Exibição do resumo
+                st.header("Resumo do Dia")
                 
                 saldo_horas = int(abs(saldo_banco_horas_minutos) // 60)
                 saldo_minutos = int(abs(saldo_banco_horas_minutos) % 60)
@@ -258,49 +238,38 @@ if calculate_clicked:
                     saldo_string = f'<span style="color:rgb(92, 228, 136)">+ {saldo_texto}</span>'
                 else:
                     saldo_string = f'<span style="color:rgb(255, 108, 108)">- {saldo_texto}</span>'
+
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
                 
-                resumo_texto = f"<p>**Tempo total trabalhado:** {horas_trabalhadas}h e {minutos_trabalhados}min"
+                # Monta a string do resumo dinamicamente
+                resumo_texto = f"**Tempo total trabalhado:** {horas_trabalhadas}h e {minutos_trabalhados}min"
                 if duracao_almoco_minutos_real > 0:
                     resumo_texto += f"<br>**Tempo de {termo_intervalo_real}:** {duracao_almoco_minutos_real:.0f}min"
+                
                 resumo_texto += f"""
                 <br>**Saldo do dia:** {saldo_string}
-                <br>**Tempo no núcleo (9h-18h):** {int(tempo_nucleo_minutos // 60)}h e {int(tempo_nucleo_minutos % 60)}min</p>
+                <br>**Tempo no núcleo (9h-18h):** {int(tempo_nucleo_minutos // 60)}h e {int(tempo_nucleo_minutos % 60)}min
                 """
-                results_html += resumo_texto
+                st.markdown(resumo_texto, unsafe_allow_html=True)
 
-                if tempo_nucleo_minutos < 300:
-                    results_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
 
+                if tempo_nucleo_minutos < 300: # 5 horas = 300 minutos
+                    st.warning("Atenção: Não cumpriu as 5h obrigatórias no período núcleo.")
+
+                # Avisos de permanência não autorizada
                 aviso_nao_autorizado = ""
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
-                    aviso_nao_autorizado += f"<li>{termo_intervalo_real.capitalize()} foi inferior a {min_intervalo_real} minutos.</li>"
-                if trabalho_liquido_minutos > 600:
-                    aviso_nao_autorizado += "<li>Jornada de trabalho excedeu 10 horas.</li>"
+                    aviso_nao_autorizado += f"\n- {termo_intervalo_real.capitalize()} foi inferior a {min_intervalo_real} minutos."
+                if trabalho_liquido_minutos > 600: # 10 horas = 600 minutos
+                    aviso_nao_autorizado += "\n- Jornada de trabalho excedeu 10 horas."
                 if hora_saida_real.time() > datetime.time(20, 0):
-                    aviso_nao_autorizado += "<li>Saída registrada após as 20h.</li>"
+                    aviso_nao_autorizado += "\n- Saída registrada após as 20h."
 
                 if aviso_nao_autorizado:
-                    results_html += f'<div class="custom-error"><b>‼️ ATENÇÃO: POSSÍVEL PERMANÊNCIA NÃO AUTORIZADA ‼️</b><ul>{aviso_nao_autorizado}</ul></div>'
-            
-            # Insere todo o HTML dos resultados no placeholder
-            final_html = f'<div id="results" class="results-container">{results_html}</div>'
-            scroll_script = """
-                <script>
-                    const results = document.getElementById('results');
-                    if (results) {
-                        setTimeout(() => {
-                           results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100); // Pequeno delay para garantir que o elemento foi renderizado
-                    }
-                </script>
-            """
-            results_placeholder.markdown(final_html + scroll_script, unsafe_allow_html=True)
-
+                    st.error(f"‼️ ATENÇÃO: POSSÍVEL PERMANÊNCIA NÃO AUTORIZADA ‼️\n**Motivos:**{aviso_nao_autorizado}")
 
         except ValueError as e:
-            st.error(f"Erro: {e}")
+            st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
-
