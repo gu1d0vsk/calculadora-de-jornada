@@ -41,14 +41,6 @@ def calcular_tempo_nucleo(entrada, saida, saida_almoco, retorno_almoco):
     tempo_liquido_nucleo = tempo_bruto_nucleo_minutos - tempo_almoco_nucleo_minutos
     return max(0, tempo_liquido_nucleo)
 
-def formatar_duracao(minutos):
-    """Formata uma duração em minutos para o formato Xh Ymin."""
-    if minutos < 0:
-        minutos = 0
-    horas = int(minutos // 60)
-    mins = int(minutos % 60)
-    return f"{horas}h {mins}min"
-
 # --- Interface do Web App com Streamlit ---
 st.set_page_config(page_title="Calculadora de Jornada", layout="centered")
 
@@ -120,13 +112,8 @@ with st.container():
         retorno_almoco_str = st.text_input("Volta Almoço", key="retorno_almoco")
     saida_real_str = st.text_input("Saída", key="saida_real")
 
-# Botão centralizado usando o sistema de colunas do Streamlit
-_, center_col, _ = st.columns([2, 3, 2])
-with center_col:
-    calculate_clicked = st.button("Calcular")
 
-
-if calculate_clicked:
+if st.button("Calcular"):
     if not entrada_str:
         st.warning("Por favor, preencha pelo menos o horário de entrada.")
     else:
@@ -135,41 +122,25 @@ if calculate_clicked:
 
             # --- Parte 1: Cálculo das previsões ---
             st.header("Previsões de Saída")
-
-            # Define o limite máximo de saída como 20h
-            limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
-
             duracao_almoço_previsao = 0
             if saida_almoco_str and retorno_almoco_str:
                 saida_almoco_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
 
-            # Previsão Mínimo
             minutos_intervalo_5h = max(15, duracao_almoço_previsao)
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             hora_base_5h = max(hora_entrada, hora_nucleo_inicio)
-            hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
-            hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
+            hora_saida_5h = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
             
-            # Previsão Padrão
             minutos_intervalo_demais = max(30, duracao_almoço_previsao)
-            hora_saida_8h_calculada = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
-            hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
-
-            # Previsão Máximo
-            hora_saida_10h_calculada = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
-            hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
-
-            # Calcula a duração líquida para cada previsão
-            duracao_5h_min = (hora_saida_5h - hora_entrada).total_seconds() / 60 - minutos_intervalo_5h
-            duracao_8h_min = (hora_saida_8h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
-            duracao_10h_min = (hora_saida_10h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
+            hora_saida_8h = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
+            hora_saida_10h = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
             
             st.markdown(f"""
-            - **Mínimo (5h no núcleo):** {hora_saida_5h.strftime('%H:%M')} ({formatar_duracao(duracao_5h_min)} trabalhadas, com {minutos_intervalo_5h:.0f}min de intervalo)
-            - **Jornada Padrão (8h):** {hora_saida_8h.strftime('%H:%M')} ({formatar_duracao(duracao_8h_min)} trabalhadas, com {minutos_intervalo_demais:.0f}min de almoço)
-            - **Máximo (10h):** {hora_saida_10h.strftime('%H:%M')} ({formatar_duracao(duracao_10h_min)} trabalhadas, com {minutos_intervalo_demais:.0f}min de almoço)
+            - **Mínimo (5h no núcleo):** {hora_saida_5h.strftime('%H:%M')} (com {minutos_intervalo_5h:.0f}min de intervalo)
+            - **Jornada Padrão (8h):** {hora_saida_8h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
+            - **Máximo (10h):** {hora_saida_10h.strftime('%H:%M')} (com {minutos_intervalo_demais:.0f}min de almoço)
             """)
             
             # --- Parte 2: Resumo do dia (se houver dados de saída) ---
@@ -261,4 +232,3 @@ if calculate_clicked:
             st.error(f"Erro no formato da hora. Use HHMM ou HH:MM.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado: {e}")
-
