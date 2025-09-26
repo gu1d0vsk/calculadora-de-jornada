@@ -109,15 +109,16 @@ st.markdown("""
         padding: 1rem;
         margin-top: 1rem;
         text-align: center;
-        color: #31333f;
     }
     .custom-warning {
         background-color: rgba(255, 170, 0, 0.15);
         border: 1px solid #ffaa00;
+        color: #31333f;
     }
     .custom-error {
         background-color: rgba(255, 108, 108, 0.15);
         border: 1px solid rgb(255, 108, 108);
+        color: rgb(255, 75, 75);
     }
     .custom-error p {
         margin: 0.5rem 0 0 0;
