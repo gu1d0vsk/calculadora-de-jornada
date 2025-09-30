@@ -326,7 +326,7 @@ st.markdown("""
     .st-au {    border-bottom-left-radius: 1.5rem;}
     .st-at {    border-top-left-radius: 1.5rem;}
     .st-emotion-cache-yinll1 svg {
-        display: none;
+        display: none !important;
     } 
 </style>
 """, unsafe_allow_html=True)
