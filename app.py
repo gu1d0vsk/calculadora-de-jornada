@@ -325,9 +325,8 @@ st.markdown("""
     .st-av {    border-top-right-radius: 1.5rem;}
     .st-au {    border-bottom-left-radius: 1.5rem;}
     .st-at {    border-top-left-radius: 1.5rem;}
-    .st-emotion-cache-yinll1 svg {
-        display: none !important;
-    } 
+    .st-emotion-cache-yinll1 svg {        display: none;} 
+    .st-emotion-cache-yinll1 svg { display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -335,6 +334,9 @@ st.markdown("""
 mensagem_do_dia = obter_mensagem_do_dia()
 st.markdown(f'<p class="main-title">{mensagem_do_dia}</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Informe seus horários para calcular a jornada diária</p>', unsafe_allow_html=True)
+
+# Verifica eventos próximos ANTES de renderizar os botões
+mensagens_eventos = verificar_eventos_proximos()
 
 # Layout dos campos de entrada com colunas para limitar a largura
 col_buffer_1, col_main, col_buffer_2 = st.columns([1, 6, 1])
@@ -352,7 +354,9 @@ with col_main:
     with col_calc:
         calculate_clicked = st.button("Calcular", use_container_width=True)
     with col_events:
-        events_clicked = st.button("Próximos Eventos", use_container_width=True)
+        # Adiciona um indicador se houver eventos
+        event_button_text = "Próximos Eventos 🗓️" if mensagens_eventos else "Próximos Eventos"
+        events_clicked = st.button(event_button_text, use_container_width=True)
 
 # Placeholder para a lista de eventos
 events_placeholder = st.empty()
@@ -365,17 +369,15 @@ if events_clicked:
 
 if st.session_state.show_events:
     with events_placeholder.container():
-        eventos = verificar_eventos_proximos()
-        
-        # Envolve a lista em um container com a classe 'visible' para a animação
-        event_html = "<div class='event-list-container visible'>"
-        if eventos:
-            for evento in eventos:
+        # Reutiliza a variável `mensagens_eventos` já calculada
+        if mensagens_eventos:
+            event_html = "<div class='event-list-container visible'>"
+            for evento in mensagens_eventos:
                 event_html += f"<div class='event-list-item'>{evento}</div>"
+            event_html += "</div>"
+            st.markdown(event_html, unsafe_allow_html=True)
         else:
-            event_html += '<div class="event-list-item" style="border: 1px solid #9AD8E1; background-color: #F0F8FF; color: #0E4953;">Nenhum evento próximo nos próximos 12 dias.</div>'
-        event_html += "</div>"
-        st.markdown(event_html, unsafe_allow_html=True)
+            st.info("Nenhum evento próximo nos próximos 12 dias.")
 
         # Script de rolagem
         st.components.v1.html("""
@@ -468,7 +470,17 @@ if st.session_state.show_results:
                 if hora_saida_real < hora_entrada:
                     raise ValueError("A Saída deve ser depois da Entrada.")
 
-                saida_almoco, retorno_almoco, duracao_almoco_minutos_real = None, None, 0
+                # Define os limites de tempo de trabalho (7h às 20h)
+                limite_inicio_jornada = hora_entrada.replace(hour=7, minute=0, second=0, microsecond=0)
+                limite_fim_jornada = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
+
+                # Ajusta a entrada e saída para estarem dentro dos limites permitidos (clipping)
+                entrada_valida = max(hora_entrada, limite_inicio_jornada)
+                saida_valida = min(hora_saida_real, limite_fim_jornada)
+
+                # Calcula a duração do almoço original
+                duracao_almoco_minutos_real = 0
+                saida_almoco, retorno_almoco = None, None
                 if saida_almoco_str and retorno_almoco_str:
                     saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                     retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
@@ -476,8 +488,21 @@ if st.session_state.show_results:
                         raise ValueError("A volta do almoço deve ser depois da saída para o almoço.")
                     duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
 
-                trabalho_bruto_minutos = (hora_saida_real - hora_entrada).total_seconds() / 60
-                tempo_trabalhado_efetivo = trabalho_bruto_minutos - duracao_almoco_minutos_real
+                # Calcula o tempo de almoço que de fato ocorreu DENTRO da jornada válida (7h-20h)
+                almoco_efetivo_minutos = 0
+                if saida_almoco and retorno_almoco:
+                    inicio_almoco_valido = max(saida_almoco, entrada_valida)
+                    fim_almoco_valido = min(retorno_almoco, saida_valida)
+                    if fim_almoco_valido > inicio_almoco_valido:
+                        almoco_efetivo_minutos = (fim_almoco_valido - inicio_almoco_valido).total_seconds() / 60
+
+                # Calcula o tempo bruto trabalhado DENTRO da jornada válida
+                trabalho_bruto_minutos = 0
+                if saida_valida > entrada_valida:
+                    trabalho_bruto_minutos = (saida_valida - entrada_valida).total_seconds() / 60
+
+                # O tempo efetivamente trabalhado é o tempo bruto MENOS o almoço que ocorreu nesse período
+                tempo_trabalhado_efetivo = trabalho_bruto_minutos - almoco_efetivo_minutos
 
                 if tempo_trabalhado_efetivo > 360: min_intervalo_real, termo_intervalo_real = 30, "almoço"
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
@@ -489,17 +514,21 @@ if st.session_state.show_results:
                     valor_almoco_display = f"{min_intervalo_real:.0f}min*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*O tempo de {termo_intervalo_real} foi de {duracao_almoco_minutos_real:.0f}min, mas para o cálculo da hora trabalhada foi considerado o valor mínimo para a jornada.</p>"
 
-
-                duracao_almoço_para_calculo = max(min_intervalo_real, duracao_almoco_minutos_real)
+                # O almoço para cálculo agora usa o tempo de almoço efetivo, não o real
+                duracao_almoço_para_calculo = max(min_intervalo_real, almoco_efetivo_minutos)
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
-                tempo_nucleo_minutos = calcular_tempo_nucleo(hora_entrada, hora_saida_real, saida_almoco, retorno_almoco)
+                
+                # Tempo no núcleo também precisa usar os horários válidos
+                tempo_nucleo_minutos = calcular_tempo_nucleo(entrada_valida, saida_valida, saida_almoco, retorno_almoco)
                 
                 # --- Construção dos Avisos ---
                 if tempo_nucleo_minutos < 300:
                     warnings_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
 
                 lista_de_permanencia = []
+                if hora_entrada.time() < datetime.time(7, 0):
+                    lista_de_permanencia.append("A entrada foi registrada antes das 7h")
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
                     lista_de_permanencia.append(f"O {termo_intervalo_real} foi inferior a {min_intervalo_real} minutos")
                 if trabalho_liquido_minutos > 600:
