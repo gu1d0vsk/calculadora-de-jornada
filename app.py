@@ -3,6 +3,7 @@ import datetime
 import time
 from eventos import *
 from mensagens import obter_mensagem_do_dia
+import pytz # Importa a biblioteca de fuso horário
 
 # --- Funções de Lógica ---
 
@@ -21,7 +22,8 @@ def obter_artigo(nome_evento):
 
 def verificar_eventos_proximos():
     """Verifica se há eventos nos próximos 12 dias e retorna mensagens."""
-    hoje = datetime.date.today()
+    fuso_horario_brasil = pytz.timezone("America/Sao_Paulo")
+    hoje = datetime.datetime.now(fuso_horario_brasil).date()
     mensagens = []
     eventos_agrupados = {}
 
@@ -325,8 +327,8 @@ st.markdown("""
     .st-av {    border-top-right-radius: 1.5rem;}
     .st-au {    border-bottom-left-radius: 1.5rem;}
     .st-at {    border-top-left-radius: 1.5rem;}
-    .st-emotion-cache-yinll1 svg {        display: none;} 
-    .st-emotion-cache-yinll1 svg { display: none;}
+    .st-emotion-cache-yinll1 svg { display: none; } 
+    .st-emotion-cache-ubko3j svg { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -604,3 +606,4 @@ if st.session_state.show_results:
             st.error(f"Ocorreu um erro inesperado: {e}")
         finally:
             st.session_state.show_results = False # Reseta para a próxima recarga
+
