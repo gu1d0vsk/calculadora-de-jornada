@@ -6,8 +6,8 @@ def obter_mensagem_do_dia():
     mensagens = {
         0: "Segundou, EBA!!",
         1: "Terça-feira 📌",
-        2: "Quarta-feira",
-        3: "Quinta-feira 📆",
+        2: "Calma, ainda é Quarta",
+        3: "Quinta 📆",
         4: "Sextou! Quem fez, fez.",
         5: "Sábado",
         6: "Domingo"
