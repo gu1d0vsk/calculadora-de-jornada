@@ -210,7 +210,6 @@ st.markdown("""
         .predictions-grid-container .metric-maximo { order: 3; }
         .summary-grid-container { grid-template-columns: repeat(2, 1fr); }
     }
-
     /* Estilos gerais para classes instáveis do Streamlit */
     .st-bv {    font-weight: 800;}
     .st-ay {    font-size: 1.3rem;}
@@ -277,7 +276,6 @@ if st.session_state.show_results:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
             
-            # --- Lógica de cálculo das previsões ---
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             duracao_almoço_previsao = 0
             if saida_almoco_str and retorno_almoco_str:
@@ -285,14 +283,13 @@ if st.session_state.show_results:
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
             
-            # --- LÓGICA CORRIGIDA PARA O INTERVALO MÍNIMO ---
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             
             tempo_antes_nucleo_min = 0
             if hora_entrada < hora_nucleo_inicio:
                 tempo_antes_nucleo_min = (hora_nucleo_inicio - hora_entrada).total_seconds() / 60
 
-            jornada_total_minima_min = (5 * 60) + tempo_antes_nucleo_min # 5h no núcleo + tempo antes
+            jornada_total_minima_min = (5 * 60) + tempo_antes_nucleo_min
             
             if jornada_total_minima_min > 360:
                 intervalo_obrigatorio_5h = 30
@@ -300,7 +297,6 @@ if st.session_state.show_results:
                 intervalo_obrigatorio_5h = 15
 
             minutos_intervalo_5h = max(intervalo_obrigatorio_5h, duracao_almoço_previsao)
-            # --- FIM DA CORREÇÃO ---
 
             hora_base_5h = max(hora_entrada, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
@@ -321,7 +317,13 @@ if st.session_state.show_results:
             texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
-            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_5h:.0f}min de intervalo</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_8h}</div><div class="value">{hora_saida_8h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div></div></div>"""
+            # --- LÓGICA ADICIONADA PARA O TERMO CORRETO ---
+            if minutos_intervalo_5h >= 30:
+                termo_intervalo_5h = "almoço"
+            else:
+                termo_intervalo_5h = "intervalo"
+            
+            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_5h:.0f}min de {termo_intervalo_5h}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_8h}</div><div class="value">{hora_saida_8h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div></div></div>"""
             
             footnote = ""
             warnings_html = ""
