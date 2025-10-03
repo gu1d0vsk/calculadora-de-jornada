@@ -37,29 +37,27 @@ def get_weather_forecast(exit_time):
         print(f"Erro ao buscar previsão do tempo: {e}")
         return ""
 
-# NOVA FUNÇÃO DE ÍCONE
 def get_weather_icon(wmo_code):
     """Converte o código WMO em um emoji de ícone de tempo."""
     if wmo_code == 0:
-        return "☀️"  # Céu limpo
+        return "☀️"
     elif wmo_code in [1, 2, 3]:
-        return "🌥️"  # Principalmente limpo, parcialmente nublado, encoberto
+        return "🌥️"
     elif wmo_code in [45, 48]:
-        return "🌫️"  # Nevoeiro
+        return "🌫️"
     elif wmo_code in [51, 53, 55, 56, 57]:
-        return "🌦️"  # Chuvisco
+        return "🌦️"
     elif wmo_code in [61, 63, 65, 66, 67]:
-        return "🌧️"  # Chuva
+        return "🌧️"
     elif wmo_code in [71, 73, 75, 77]:
-        return "❄️"  # Neve
+        return "❄️"
     elif wmo_code in [80, 81, 82]:
-        return "🌧️"  # Pancadas de chuva
+        return "🌧️"
     elif wmo_code in [95, 96, 99]:
-        return "⛈️"  # Trovoada
+        return "⛈️"
     else:
-        return "🌡️" # Padrão
+        return "🌡️"
 
-# FUNÇÃO DE CLIMA DIÁRIO ATUALIZADA
 @st.cache_data(ttl=10800) # Cache de 3 horas
 def get_daily_weather():
     """Busca a previsão de temperatura, chuva, UV e ícone para o dia no Rio de Janeiro."""
@@ -67,37 +65,24 @@ def get_daily_weather():
         lat = -22.93
         lon = -43.17
         fuso_horario_brasil = "America/Sao_Paulo"
-        
-        # URL ATUALIZADA para incluir chance de chuva e índice UV
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,uv_index_max&timezone={fuso_horario_brasil}&forecast_days=1"
-
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
-
-        # Extraindo todos os dados
         daily_data = data['daily']
         temp_min = daily_data['temperature_2m_min'][0]
         temp_max = daily_data['temperature_2m_max'][0]
         weather_code = daily_data['weather_code'][0]
         rain_prob = daily_data['precipitation_probability_max'][0]
         uv_index = daily_data['uv_index_max'][0]
-
         icon = get_weather_icon(weather_code)
-
-        # Construindo o texto parte por parte
         forecast_parts = [
             f"{icon} Hoje no Rio: Mínima de {temp_min:.0f}°C e Máxima de {temp_max:.0f}°C",
             f"💧 {rain_prob:.0f}%"
         ]
-
-        # Adiciona o alerta de UV apenas se for alto (>= 6)
         if uv_index >= 6:
             forecast_parts.append(f"🥵 UV Alto ({uv_index:.1f})")
-
-        # Juntando tudo com um separador
         return " | ".join(forecast_parts)
-        
     except Exception as e:
         print(f"Erro ao buscar previsão diária: {e}")
         return ""
@@ -181,45 +166,29 @@ def formatar_duracao(minutos):
 # --- Interface do Web App com Streamlit ---
 st.set_page_config(page_title="Calculadora de Jornada", layout="centered")
 
-# Injeção de CSS para customização
 st.markdown("""
 <style>
-    /* Diminui o padding superior da página */
     div.block-container { padding-top: 4rem; }
-    /* Limita a largura do container principal */
     .main .block-container { max-width: 800px; }
-    /* Estiliza o título principal customizado */
     .main-title { font-size: 2.2rem !important; font-weight: bold; text-align: center; }
-    /* Estiliza o subtítulo customizado */
     .sub-title { color: gray; text-align: center; font-size: 1.25rem !important; }
-    /* Estilos para os botões */
     div[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stButton"] > button { background-color: rgb(221, 79, 5) !important; color: #FFFFFF !important; border-radius: 4rem; }
     div[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stButton"] > button { background-color: rgb(0, 80, 81) !important; color: #FFFFFF !important; border-radius: 4rem; }
-    /* Arredonda as caixas de input e centraliza os labels */
     div[data-testid="stTextInput"] input { border-radius: 1.5rem !important; text-align: center; font-weight: 600; }
     .main div[data-testid="stTextInput"] > label { text-align: center !important; width: 100%; display: block; }
-    /* Animação de fade-in para os resultados */
-    .results-container { animation: fadeIn 0.5s ease-out forwards; }
-    /* Animação para a lista de eventos (APENAS FADE-IN) */
-    .event-list-container.visible { animation: fadeIn 0.5s ease-out forwards; }
+    .results-container, .event-list-container.visible { animation: fadeIn 0.5s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-    /* Estilos para a lista de eventos */
     .event-list-item { background-color: #cacaca3b00; padding: 10px; border-radius: 1.5rem; margin-bottom: 5px; text-align: center; }
     body.dark .event-list-item { background-color: #cacaca3b00; color: #fafafa; }
-    /* Estilos para alertas customizados */
     .custom-warning, .custom-error { border-radius: 1.5rem; padding: 1rem; margin-top: 1rem; text-align: center; }
     .custom-warning { background-color: rgba(255, 170, 0, 0); border: 1px solid #ffaa0000; color: rgb(247, 185, 61); }
     .custom-error { background-color: rgba(255, 108, 108, 0.15); border: 1px solid rgb(255, 108, 108); color: rgb(255, 75, 75); }
     .custom-error p { margin: 0.5rem 0 0 0; }
-    /* Oculta o ícone de âncora/link nos cabeçalhos de forma mais específica */
     div[data-testid="stHeading"] a { display: none !important; }
-    /* Remove estilos padrão que podem causar conflito */
     div[data-testid="stMetric"] { background-color: transparent !important; padding: 0 !important; }
     div[data-testid="stMetric"] [data-testid="stMetricLabel"] p,
     div[data-testid="stMetric"] [data-testid="stMetricValue"] { color: inherit !important; }
-    /* Estilo para centralizar texto dentro das seções de resultado */
     .section-container { text-align: center; }
-    /* Estilos para a métrica customizada */
     .metric-custom { background-color: #F0F2F6; border-radius: 4rem; padding: 1rem; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; color: #31333f; }
     .metric-almoco { background-color: #F0F2F6; }
     .metric-saldo-pos { background-color: rgb(84, 198, 121); }
@@ -230,20 +199,18 @@ st.markdown("""
     .metric-custom .label { font-size: 0.875rem; margin-bottom: 0.25rem; color: #5a5a5a; }
     .metric-custom .value { font-size: 1.5rem; font-weight: 900; color: #31333f; }
     .metric-custom .details { font-size: 0.75rem; margin-top: 0.25rem; color: #5a5a5a; }
-    /* Cor de texto branca para caixas coloridas */
     .metric-saldo-pos .value, .metric-saldo-neg .value, .metric-minimo .value, .metric-padrao .value, .metric-maximo .value { color: #FFFFFF; }
     .metric-saldo-pos .label, .metric-saldo-neg .label, .metric-minimo .label, .metric-padrao .label, .metric-maximo .label, .metric-minimo .details, .metric-padrao .details, .metric-maximo .details { color: rgba(255, 255, 255, 0.85); }
-    /* Grids de métricas */
     .predictions-grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
     .summary-grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
-    /* Responsividade */
     @media (max-width: 640px) {
         .predictions-grid-container { grid-template-columns: repeat(2, 1fr); }
         .predictions-grid-container .metric-minimo { order: 2; }
         .predictions-grid-container .metric-padrao { order: 1; grid-column: 1 / -1; }
-        .predictions_grid-container .metric-maximo { order: 3; }
+        .predictions-grid-container .metric-maximo { order: 3; }
         .summary-grid-container { grid-template-columns: repeat(2, 1fr); }
     }
+
     /* Estilos gerais para classes instáveis do Streamlit */
     .st-bv {    font-weight: 800;}
     .st-ay {    font-size: 1.3rem;}
@@ -309,29 +276,53 @@ if st.session_state.show_results:
     else:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
+            
+            # --- Lógica de cálculo das previsões ---
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             duracao_almoço_previsao = 0
             if saida_almoco_str and retorno_almoco_str:
                 saida_almoco_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
-            minutos_intervalo_5h = max(15, duracao_almoço_previsao)
+            
+            # --- LÓGICA CORRIGIDA PARA O INTERVALO MÍNIMO ---
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
+            
+            tempo_antes_nucleo_min = 0
+            if hora_entrada < hora_nucleo_inicio:
+                tempo_antes_nucleo_min = (hora_nucleo_inicio - hora_entrada).total_seconds() / 60
+
+            jornada_total_minima_min = (5 * 60) + tempo_antes_nucleo_min # 5h no núcleo + tempo antes
+            
+            if jornada_total_minima_min > 360:
+                intervalo_obrigatorio_5h = 30
+            else:
+                intervalo_obrigatorio_5h = 15
+
+            minutos_intervalo_5h = max(intervalo_obrigatorio_5h, duracao_almoço_previsao)
+            # --- FIM DA CORREÇÃO ---
+
             hora_base_5h = max(hora_entrada, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
             hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
+            
             minutos_intervalo_demais = max(30, duracao_almoço_previsao)
             hora_saida_8h_calculada = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
             hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
+
             hora_saida_10h_calculada = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
             hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
+
             duracao_5h_min = (hora_saida_5h - hora_entrada).total_seconds() / 60 - minutos_intervalo_5h
             duracao_8h_min = (hora_saida_8h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
             duracao_10h_min = (hora_saida_10h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
+            
             texto_desc_5h = f"({formatar_duracao(duracao_5h_min)})" if hora_saida_5h_calculada > limite_saida else "(5h no núcleo)"
             texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
+
             predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_5h:.0f}min de intervalo</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_8h}</div><div class="value">{hora_saida_8h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço</div></div></div></div>"""
+            
             footnote = ""
             warnings_html = ""
             if saida_real_str:
@@ -408,7 +399,6 @@ if st.session_state.show_results:
         finally:
             st.session_state.show_results = False
 
-# ADIÇÃO DO TEXTO DE PREVISÃO NO FINAL DA PÁGINA
 daily_forecast = get_daily_weather()
 if daily_forecast:
     st.markdown("---")
