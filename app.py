@@ -65,23 +65,40 @@ def get_daily_weather():
         lat = -22.93
         lon = -43.17
         fuso_horario_brasil = "America/Sao_Paulo"
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,uv_index_max&timezone={fuso_horario_brasil}&forecast_days=1"
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&hourly=uv_index&timezone={fuso_horario_brasil}&forecast_days=1"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
+        
         daily_data = data['daily']
         temp_min = daily_data['temperature_2m_min'][0]
         temp_max = daily_data['temperature_2m_max'][0]
         weather_code = daily_data['weather_code'][0]
         rain_prob = daily_data['precipitation_probability_max'][0]
-        uv_index = daily_data['uv_index_max'][0]
         icon = get_weather_icon(weather_code)
+        
+        hourly_data = data['hourly']
+        uv_index_midday = hourly_data['uv_index'][12]
+        
         forecast_parts = [
             f"{icon} Hoje no Rio: Mínima de {temp_min:.0f}°C e Máxima de {temp_max:.0f}°C",
             f"💧 {rain_prob:.0f}%"
         ]
-        if uv_index >= 6:
-            forecast_parts.append(f"🥵 UV Alto ({uv_index:.1f})")
+        
+        uv_value = uv_index_midday
+        if uv_value <= 2:
+            uv_text = f"😎 UV ao meio-dia: {uv_value:.1f} (Baixo)"
+        elif uv_value <= 5:
+            uv_text = f"🙂 UV ao meio-dia: {uv_value:.1f} (Moderado)"
+        elif uv_value <= 7:
+            uv_text = f"🥵 UV ao meio-dia: {uv_value:.1f} (Alto)"
+        elif uv_value <= 10:
+            uv_text = f"⚠️ UV ao meio-dia: {uv_value:.1f} (Muito Alto)"
+        else:
+            uv_text = f"‼️ UV ao meio-dia: {uv_value:.1f} (Extremo)"
+        
+        forecast_parts.append(uv_text)
+            
         return " | ".join(forecast_parts)
     except Exception as e:
         print(f"Erro ao buscar previsão diária: {e}")
@@ -188,7 +205,7 @@ st.markdown("""
     div[data-testid="stMetric"] { background-color: transparent !important; padding: 0 !important; }
     div[data-testid="stMetric"] [data-testid="stMetricLabel"] p,
     div[data-testid="stMetric"] [data-testid="stMetricValue"] { color: inherit !important; }
-    .section-container { text-align: center; }
+    .section-container { text-align: center; margin-top: 1.5rem; }
     .metric-custom { background-color: #F0F2F6; border-radius: 4rem; padding: 1rem; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; color: #31333f; }
     .metric-almoco { background-color: #F0F2F6; }
     .metric-saldo-pos { background-color: rgb(84, 198, 121); }
@@ -203,6 +220,17 @@ st.markdown("""
     .metric-saldo-pos .label, .metric-saldo-neg .label, .metric-minimo .label, .metric-padrao .label, .metric-maximo .label, .metric-minimo .details, .metric-padrao .details, .metric-maximo .details { color: rgba(255, 255, 255, 0.85); }
     .predictions-grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
     .summary-grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+    
+    .predictions-wrapper {
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out, padding 0.4s ease-out;
+    }
+    .predictions-wrapper.de-emphasized {
+        opacity: 0.5;
+        transform: scale(0.98);
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+
     @media (max-width: 640px) {
         .predictions-grid-container { grid-template-columns: repeat(2, 1fr); }
         .predictions-grid-container .metric-minimo { order: 2; }
@@ -276,6 +304,8 @@ if st.session_state.show_results:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
             
+            predictions_container_class = "predictions-wrapper"
+
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             duracao_almoço_previsao = 0
             if saida_almoco_str and retorno_almoco_str:
@@ -317,7 +347,6 @@ if st.session_state.show_results:
             texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
-            # --- LÓGICA ADICIONADA PARA O TERMO CORRETO ---
             if minutos_intervalo_5h >= 30:
                 termo_intervalo_5h = "almoço"
             else:
@@ -328,6 +357,8 @@ if st.session_state.show_results:
             footnote = ""
             warnings_html = ""
             if saida_real_str:
+                predictions_container_class += " de-emphasized"
+                
                 hora_saida_real = datetime.datetime.strptime(formatar_hora_input(saida_real_str), "%H:%M")
                 if hora_saida_real < hora_entrada:
                     raise ValueError("A Saída deve ser depois da Entrada.")
@@ -356,10 +387,12 @@ if st.session_state.show_results:
                 if tempo_trabalhado_efetivo > 360: min_intervalo_real, termo_intervalo_real = 30, "almoço"
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
                 else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
+                
                 valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min"
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
-                    valor_almoco_display = f"{min_intervalo_real:.0f}min*"
-                    footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*O tempo de {termo_intervalo_real} foi de {duracao_almoco_minutos_real:.0f}min, mas para o cálculo da hora trabalhada foi considerado o valor mínimo para a jornada.</p>"
+                    valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min*"
+                    footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu tempo de {termo_intervalo_real} foi menor que o mínimo de {min_intervalo_real} minutos. Para os cálculos, foi considerado o valor mínimo obrigatório.</p>"
+                
                 duracao_almoço_para_calculo = max(min_intervalo_real, almoco_efetivo_minutos)
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
@@ -382,18 +415,23 @@ if st.session_state.show_results:
                 weather_warning = get_weather_forecast(saida_valida)
                 if weather_warning:
                     warnings_html += f'<div class="custom-warning">{weather_warning}</div>'
+            
             with results_placeholder.container():
-                st.markdown(f'<div class="results-container">{predictions_html}</div>', unsafe_allow_html=True)
+                final_predictions_html = f'<div class="{predictions_container_class}">{predictions_html}</div>'
+                st.markdown(f'<div class="results-container">{final_predictions_html}</div>', unsafe_allow_html=True)
+                
                 if saida_real_str:
-                    st.markdown("<hr>", unsafe_allow_html=True)
+                    # Linha <hr> removida daqui
                     st.markdown("<div class='section-container'><h3>Resumo do Dia</h3></div>", unsafe_allow_html=True)
                     saldo_css_class = "metric-saldo-pos" if saldo_banco_horas_minutos >= 0 else "metric-saldo-neg"
                     sinal = "+" if saldo_banco_horas_minutos >= 0 else "-"
                     summary_grid_html = f"""<div class="summary-grid-container"><div class="metric-custom"><div class="label">Total Trabalhado</div><div class="value">{formatar_duracao(trabalho_liquido_minutos)}</div></div><div class="metric-custom"><div class="label">Tempo no Núcleo</div><div class="value">{formatar_duracao(tempo_nucleo_minutos)}</div></div><div class="metric-custom metric-almoco"><div class="label">Tempo de {termo_intervalo_real}</div><div class="value">{valor_almoco_display}</div></div><div class="metric-custom {saldo_css_class}"><div class="label">Saldo do Dia</div><div class="value">{sinal} {formatar_duracao(abs(saldo_banco_horas_minutos))}</div></div></div>"""
                     st.markdown(summary_grid_html, unsafe_allow_html=True)
                     st.markdown(footnote, unsafe_allow_html=True)
+
                 st.markdown(warnings_html, unsafe_allow_html=True)
             st.components.v1.html("""<script>setTimeout(function() { const resultsEl = window.parent.document.querySelector('.results-container'); if (resultsEl) { resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 100);</script>""", height=0)
+
         except ValueError as e:
             st.error(f"Erro: {e}")
         except Exception as e:
