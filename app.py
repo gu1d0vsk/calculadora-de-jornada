@@ -146,6 +146,26 @@ def verificar_eventos_proximos():
             mensagens.append(mensagem)
     return mensagens
 
+# --- NOVA FUNÇÃO ---
+def gerar_contagem_regressiva_home_office():
+    """Gera a string de contagem regressiva para o home office."""
+    try:
+        fuso_horario_brasil = pytz.timezone("America/Sao_Paulo")
+        hoje = datetime.datetime.now(fuso_horario_brasil).date()
+        data_home_office = datetime.date(2026, 2, 1)
+        
+        dias_restantes = (data_home_office - hoje).days
+
+        if dias_restantes < 0:
+            return ""
+
+        texto_dias = "dia" if dias_restantes == 1 else "dias"
+        return f"<strong>Integra II:</strong> {dias_restantes} {texto_dias} para o home office"
+        
+    except Exception as e:
+        print(f"Erro ao gerar contagem regressiva: {e}")
+        return ""
+
 def formatar_hora_input(input_str):
     input_str = input_str.strip()
     if ':' in input_str:
@@ -421,7 +441,6 @@ if st.session_state.show_results:
                 st.markdown(f'<div class="results-container">{final_predictions_html}</div>', unsafe_allow_html=True)
                 
                 if saida_real_str:
-                    # Linha <hr> removida daqui
                     st.markdown("<div class='section-container'><h3>Resumo do Dia</h3></div>", unsafe_allow_html=True)
                     saldo_css_class = "metric-saldo-pos" if saldo_banco_horas_minutos >= 0 else "metric-saldo-neg"
                     sinal = "+" if saldo_banco_horas_minutos >= 0 else "-"
@@ -443,3 +462,7 @@ daily_forecast = get_daily_weather()
 if daily_forecast:
     st.markdown("---")
     st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>{daily_forecast}</p>", unsafe_allow_html=True)
+
+contagem_regressiva = gerar_contagem_regressiva_home_office()
+if contagem_regressiva:
+    st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>{contagem_regressiva}</p>", unsafe_allow_html=True)
