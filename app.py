@@ -324,6 +324,13 @@ if st.session_state.show_results:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
             
+            # --- INÍCIO DAS CORREÇÕES ---
+            # 1. Define o limite das 7h para a previsão
+            limite_inicio_jornada_previsao = hora_entrada.replace(hour=7, minute=0, second=0, microsecond=0)
+            # 2. Trava a entrada às 7h para os cálculos de previsão
+            entrada_valida_previsao = max(hora_entrada, limite_inicio_jornada_previsao)
+            # --- FIM DAS CORREÇÕES ---
+
             predictions_container_class = "predictions-wrapper"
 
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
@@ -336,8 +343,9 @@ if st.session_state.show_results:
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             
             tempo_antes_nucleo_min = 0
-            if hora_entrada < hora_nucleo_inicio:
-                tempo_antes_nucleo_min = (hora_nucleo_inicio - hora_entrada).total_seconds() / 60
+            # 3. CORREÇÃO: Usar a entrada válida para calcular o tempo antes do núcleo
+            if entrada_valida_previsao < hora_nucleo_inicio:
+                tempo_antes_nucleo_min = (hora_nucleo_inicio - entrada_valida_previsao).total_seconds() / 60
 
             jornada_total_minima_min = (5 * 60) + tempo_antes_nucleo_min
             
@@ -348,20 +356,24 @@ if st.session_state.show_results:
 
             minutos_intervalo_5h = max(intervalo_obrigatorio_5h, duracao_almoço_previsao)
 
-            hora_base_5h = max(hora_entrada, hora_nucleo_inicio)
+            # 4. CORREÇÃO: Usar a entrada válida como base
+            hora_base_5h = max(entrada_valida_previsao, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
             hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
             
             minutos_intervalo_demais = max(30, duracao_almoço_previsao)
-            hora_saida_8h_calculada = hora_entrada + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
+            # 5. CORREÇÃO: Usar a entrada válida para previsão de 8h
+            hora_saida_8h_calculada = entrada_valida_previsao + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
             hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
 
-            hora_saida_10h_calculada = hora_entrada + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
+            # 6. CORREÇÃO: Usar a entrada válida para previsão de 10h
+            hora_saida_10h_calculada = entrada_valida_previsao + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
             hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
 
-            duracao_5h_min = (hora_saida_5h - hora_entrada).total_seconds() / 60 - minutos_intervalo_5h
-            duracao_8h_min = (hora_saida_8h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
-            duracao_10h_min = (hora_saida_10h - hora_entrada).total_seconds() / 60 - minutos_intervalo_demais
+            # 7. CORREÇÃO: Usar a entrada válida para calcular as durações
+            duracao_5h_min = (hora_saida_5h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_5h
+            duracao_8h_min = (hora_saida_8h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais
+            duracao_10h_min = (hora_saida_10h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais
             
             texto_desc_5h = f"({formatar_duracao(duracao_5h_min)})" if hora_saida_5h_calculada > limite_saida else "(5h no núcleo)"
             texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
@@ -382,10 +394,14 @@ if st.session_state.show_results:
                 hora_saida_real = datetime.datetime.strptime(formatar_hora_input(saida_real_str), "%H:%M")
                 if hora_saida_real < hora_entrada:
                     raise ValueError("A Saída deve ser depois da Entrada.")
+                
+                # A lógica do resumo (abaixo) já estava correta, usando a trava das 7h
                 limite_inicio_jornada = hora_entrada.replace(hour=7, minute=0, second=0, microsecond=0)
                 limite_fim_jornada = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
-                entrada_valida = max(hora_entrada, limite_inicio_jornada)
+                
+                entrada_valida = max(hora_entrada, limite_inicio_jornada) # Esta é a trava para o cálculo final
                 saida_valida = min(hora_saida_real, limite_fim_jornada)
+                
                 duracao_almoco_minutos_real = 0
                 saida_almoco, retorno_almoco = None, None
                 if saida_almoco_str and retorno_almoco_str:
@@ -420,6 +436,7 @@ if st.session_state.show_results:
                 if tempo_nucleo_minutos < 300:
                     warnings_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
                 lista_de_permanencia = []
+                # Esta checagem usa 'hora_entrada' (original) de propósito, apenas para o aviso
                 if hora_entrada.time() < datetime.time(7, 0):
                     lista_de_permanencia.append("A entrada foi registrada antes das 7h")
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
