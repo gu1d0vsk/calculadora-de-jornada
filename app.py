@@ -276,13 +276,13 @@ st.markdown("""
     <h4 style="margin: 0 0 0.8rem 0; color: #d32f2f; display: flex; align-items: center; font-weight: 700;">
         <span style="font-size: 1.5rem; margin-right: 0.5rem;">🩸</span> Campanha de Doação de Sangue
     </h4>
-    <p style="font-size: 1.1rem; margin-bottom: 1rem; color: #333; font-weight: 500;">
+    <p style="font-size: 1.1rem; margin-bottom: 1rem; color: #d32f2f; font-weight: 500;">
         Dias 12 e 13 de Novembro, das 10h às 15h <br>
         <span style="font-weight: normal;">Local:</span> Espaço Multiplex (Pilotis)
     </p>
     <hr style="margin: 0.8rem 0; border: none; border-top: 1px solid rgba(255, 82, 82, 0.2);">
-    <p style="font-size: 0.85rem; color: #555; margin: 0; line-height: 1.5;">
-        <strong>Requisitos:</strong> Portar documento de identidade com foto; Estar bem de saúde; Pesar no mínimo 50 Kg; **NÃO ESTAR EM JEJUM**. Evitar apenas alimentos gordurosos nas 3 horas que antecedem a doação.
+    <p style="font-size: 0.85rem; color: #d32f2f; margin: 0; line-height: 1.5;">
+        <strong>Requisitos:</strong> Portar documento de identidade com foto; estar bem de saúde; Pesar no mínimo 50 Kg; **Não estar em jejum**. Evitar apenas alimentos gordurosos nas 3 horas que antecedem a doação.
     </p>
 </div>
 """, unsafe_allow_html=True)
