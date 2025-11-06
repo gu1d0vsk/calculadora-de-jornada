@@ -282,7 +282,7 @@ st.markdown("""
     </p>
     <hr style="margin: 0.8rem 0; border: none; border-top: 1px solid rgba(255, 82, 82, 0.2);">
     <p style="font-size: 0.85rem; color: #d32f2f; margin: 0; line-height: 1.5;">
-        <strong>Requisitos:</strong> Portar documento de identidade com foto; estar bem de saúde; Pesar no mínimo 50 Kg; <strong>NÃO ESTAR EM JEJUM<strong>. Evitar apenas alimentos gordurosos nas 3 horas que antecedem a doação.
+        <strong>Requisitos:</strong> Documento de identidade com foto; Estar bem de saúde; Pesar no mínimo 50 Kg; <strong>NÃO ESTAR EM JEJUM<strong>. Evitar alimentos gordurosos nas 3 horas que antecedem a doação.
     </p>
 </div>
 """, unsafe_allow_html=True)
