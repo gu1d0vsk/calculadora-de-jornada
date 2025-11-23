@@ -185,11 +185,14 @@ def calcular_tempo_nucleo(entrada, saida, saida_almoco, retorno_almoco):
         return 0
     tempo_bruto_nucleo_segundos = (fim_trabalho_nucleo - inicio_trabalho_nucleo).total_seconds()
     tempo_almoco_no_nucleo_segundos = 0
+    
+    # Se tiver horário de almoço explícito
     if saida_almoco and retorno_almoco:
         inicio_almoco_sobreposicao = max(inicio_trabalho_nucleo, saida_almoco)
         fim_almoco_sobreposicao = min(fim_trabalho_nucleo, retorno_almoco)
         if fim_almoco_sobreposicao > inicio_almoco_sobreposicao:
             tempo_almoco_no_nucleo_segundos = (fim_almoco_sobreposicao - inicio_almoco_sobreposicao).total_seconds()
+            
     tempo_liquido_nucleo_segundos = tempo_bruto_nucleo_segundos - tempo_almoco_no_nucleo_segundos
     return max(0, tempo_liquido_nucleo_segundos / 60)
 
@@ -205,12 +208,13 @@ st.set_page_config(page_title="Calculadora de Jornada", layout="centered")
 
 st.markdown("""
 <style>
+   
     div.block-container { padding-top: 4rem; }
     .main .block-container { max-width: 800px; }
     .main-title { font-size: 2.2rem !important; font-weight: bold; text-align: center; }
     .sub-title { color: gray; text-align: center; font-size: 1.25rem !important; }
-    div[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stButton"] > button { background-color: rgb(221, 79, 5) !important; color: #FFFFFF !important; border-radius: 4rem; }
-    div[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stButton"] > button { background-color: rgb(0, 80, 81) !important; color: #FFFFFF !important; border-radius: 4rem; }
+    div[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stButton"] > button { background-color: rgb(221, 79, 5) !important; color: #FFFFFF !important; border-radius: 4rem; border-color: transparent;}
+    div[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stButton"] > button { background-color: rgb(0, 80, 81) !important; color: #FFFFFF !important; border-radius: 4rem; border-color: transparent;}
     div[data-testid="stTextInput"] input { border-radius: 1.5rem !important; text-align: center; font-weight: 600; }
     .main div[data-testid="stTextInput"] > label { text-align: center !important; width: 100%; display: block; }
     .results-container, .event-list-container.visible { animation: fadeIn 0.5s ease-out forwards; }
@@ -251,6 +255,18 @@ st.markdown("""
         margin-bottom: 1rem;
     }
 
+    /* Centralização e Fonte do Checkbox */
+    div[data-testid="stCheckbox"] {
+        display: flex;
+        justify-content: center;
+        margin-top: 0px;
+        padding-bottom: 0px;
+    }
+    div[data-testid="stCheckbox"] label span p {
+        font-size: 0.85rem !important;
+        color: #555;
+    }
+
     @media (max-width: 640px) {
         .predictions-grid-container { grid-template-columns: repeat(2, 1fr); }
         .predictions-grid-container .metric-minimo { order: 2; }
@@ -267,10 +283,20 @@ st.markdown("""
     .st-at {    border-top-left-radius: 1.5rem;}
     .st-emotion-cache-yinll1 svg { display: none; } 
     .st-emotion-cache-ubko3j svg { display: none; }
+    .st-emotion-cache-467cry hr:not([size]) {    display: none;}
+    .st-emotion-cache-zh2fnc {    place-items: center; width: auto !important;}
+    .st-emotion-cache-3uj0rx hr:not([size]) { display: none;}
+    .st-emotion-cache-14vh5up {    display: none;}
+    a._container_gzau3_1._viewerBadge_nim44_23 {    display: none;}
+    .st-emotion-cache-scp8yw.e3g0k5y6 {    display: none;}
+    img._profileImage_gzau3_78._lightThemeShadow_gzau3_95 {    display: none;}
+    ._container_gzau3_1 {      display: none;}
+    ._profileImage_gzau3_78 {    display: none;}
+    .st-emotion-cache-1sss6mo {    display: none !important;}
+
 
 </style>
 """, unsafe_allow_html=True)
-
 
 
 mensagem_do_dia = obter_mensagem_do_dia()
@@ -282,11 +308,22 @@ mensagens_eventos = verificar_eventos_proximos()
 col_buffer_1, col_main, col_buffer_2 = st.columns([1, 6, 1])
 with col_main:
     entrada_str = st.text_input("Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
-    col1, col2 = st.columns(2)
-    with col1:
-        saida_almoco_str = st.text_input("Saída para o Almoço", key="saida_almoco")
-    with col2:
-        retorno_almoco_str = st.text_input("Volta do Almoço", key="retorno_almoco")
+    
+    # --- CHECKBOX DE INTERVALO AUTOMÁTICO ---
+    # Agora definido como True por padrão e sem o emoji
+    usar_intervalo_auto = st.checkbox("Intervalo Automático (Mínimo)", value=True, help="Calcula o desconto automático (30min ou 15min) sem precisar digitar os horários de almoço.")
+    
+    if not usar_intervalo_auto:
+        col1, col2 = st.columns(2)
+        with col1:
+            saida_almoco_str = st.text_input("Saída para o Almoço", key="saida_almoco")
+        with col2:
+            retorno_almoco_str = st.text_input("Volta do Almoço", key="retorno_almoco")
+    else:
+        saida_almoco_str = ""
+        retorno_almoco_str = ""
+    # ----------------------------------------
+
     saida_real_str = st.text_input("Saída", key="saida_real")
     col_calc, col_events = st.columns(2)
     with col_calc:
@@ -325,26 +362,25 @@ if st.session_state.show_results:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
             
-            # --- INÍCIO DAS CORREÇÕES ---
-            # 1. Define o limite das 7h para a previsão
+            # --- CORREÇÃO DO BUG DAS 7H NA PREVISÃO ---
             limite_inicio_jornada_previsao = hora_entrada.replace(hour=7, minute=0, second=0, microsecond=0)
-            # 2. Trava a entrada às 7h para os cálculos de previsão
             entrada_valida_previsao = max(hora_entrada, limite_inicio_jornada_previsao)
-            # --- FIM DAS CORREÇÕES ---
-
+            
             predictions_container_class = "predictions-wrapper"
 
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             duracao_almoço_previsao = 0
-            if saida_almoco_str and retorno_almoco_str:
+            
+            # Se NÃO for auto e tiver inputs, calcula a duração
+            if not usar_intervalo_auto and saida_almoco_str and retorno_almoco_str:
                 saida_almoco_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
+            # Se for auto, a previsão já assume o mínimo (que é o padrão do código abaixo)
             
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             
             tempo_antes_nucleo_min = 0
-            # 3. CORREÇÃO: Usar a entrada válida para calcular o tempo antes do núcleo
             if entrada_valida_previsao < hora_nucleo_inicio:
                 tempo_antes_nucleo_min = (hora_nucleo_inicio - entrada_valida_previsao).total_seconds() / 60
 
@@ -357,21 +393,18 @@ if st.session_state.show_results:
 
             minutos_intervalo_5h = max(intervalo_obrigatorio_5h, duracao_almoço_previsao)
 
-            # 4. CORREÇÃO: Usar a entrada válida como base
             hora_base_5h = max(entrada_valida_previsao, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h)
             hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
             
             minutos_intervalo_demais = max(30, duracao_almoço_previsao)
-            # 5. CORREÇÃO: Usar a entrada válida para previsão de 8h
+            
             hora_saida_8h_calculada = entrada_valida_previsao + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais)
             hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
 
-            # 6. CORREÇÃO: Usar a entrada válida para previsão de 10h
             hora_saida_10h_calculada = entrada_valida_previsao + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais)
             hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
 
-            # 7. CORREÇÃO: Usar a entrada válida para calcular as durações
             duracao_5h_min = (hora_saida_5h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_5h
             duracao_8h_min = (hora_saida_8h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais
             duracao_10h_min = (hora_saida_10h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais
@@ -396,31 +429,54 @@ if st.session_state.show_results:
                 if hora_saida_real < hora_entrada:
                     raise ValueError("A Saída deve ser depois da Entrada.")
                 
-                # A lógica do resumo (abaixo) já estava correta, usando a trava das 7h
                 limite_inicio_jornada = hora_entrada.replace(hour=7, minute=0, second=0, microsecond=0)
                 limite_fim_jornada = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
                 
-                entrada_valida = max(hora_entrada, limite_inicio_jornada) # Esta é a trava para o cálculo final
+                entrada_valida = max(hora_entrada, limite_inicio_jornada)
                 saida_valida = min(hora_saida_real, limite_fim_jornada)
                 
                 duracao_almoco_minutos_real = 0
                 saida_almoco, retorno_almoco = None, None
-                if saida_almoco_str and retorno_almoco_str:
-                    saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
-                    retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
-                    if retorno_almoco < saida_almoco:
-                        raise ValueError("A volta do almoço deve ser depois da saída para o almoço.")
-                    duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
+                
+                # --- LÓGICA AJUSTADA PARA INTERVALO AUTOMÁTICO ---
+                if not usar_intervalo_auto:
+                    if saida_almoco_str and retorno_almoco_str:
+                        saida_almoco = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
+                        retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
+                        if retorno_almoco < saida_almoco:
+                            raise ValueError("A volta do almoço deve ser depois da saída para o almoço.")
+                        duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
+                else:
+                    # Se for automático, calcula a duração baseada no tempo bruto
+                    trabalho_bruto_temp = 0
+                    if saida_valida > entrada_valida:
+                         trabalho_bruto_temp = (saida_valida - entrada_valida).total_seconds() / 60
+                    
+                    if trabalho_bruto_temp > 360:
+                        duracao_almoco_minutos_real = 30
+                    elif trabalho_bruto_temp > 240:
+                        duracao_almoco_minutos_real = 15
+                    else:
+                        duracao_almoco_minutos_real = 0
+                # --------------------------------------------------
+
                 almoco_efetivo_minutos = 0
-                if saida_almoco and retorno_almoco:
-                    inicio_almoco_valido = max(saida_almoco, entrada_valida)
-                    fim_almoco_valido = min(retorno_almoco, saida_valida)
-                    if fim_almoco_valido > inicio_almoco_valido:
-                        almoco_efetivo_minutos = (fim_almoco_valido - inicio_almoco_valido).total_seconds() / 60
+                if not usar_intervalo_auto:
+                    if saida_almoco and retorno_almoco:
+                        inicio_almoco_valido = max(saida_almoco, entrada_valida)
+                        fim_almoco_valido = min(retorno_almoco, saida_valida)
+                        if fim_almoco_valido > inicio_almoco_valido:
+                            almoco_efetivo_minutos = (fim_almoco_valido - inicio_almoco_valido).total_seconds() / 60
+                else:
+                    # Se for automático, assumimos que o almoço foi "efetivo" (descontado integralmente)
+                    almoco_efetivo_minutos = duracao_almoco_minutos_real
+
                 trabalho_bruto_minutos = 0
                 if saida_valida > entrada_valida:
                     trabalho_bruto_minutos = (saida_valida - entrada_valida).total_seconds() / 60
+                
                 tempo_trabalhado_efetivo = trabalho_bruto_minutos - almoco_efetivo_minutos
+                
                 if tempo_trabalhado_efetivo > 360: min_intervalo_real, termo_intervalo_real = 30, "almoço"
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
                 else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
@@ -429,15 +485,22 @@ if st.session_state.show_results:
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu tempo de {termo_intervalo_real} foi menor que o mínimo de {min_intervalo_real} minutos. Para os cálculos, foi considerado o valor mínimo obrigatório.</p>"
-                
+                elif usar_intervalo_auto and duracao_almoco_minutos_real > 0:
+                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min"
+
                 duracao_almoço_para_calculo = max(min_intervalo_real, almoco_efetivo_minutos)
                 trabalho_liquido_minutos = trabalho_bruto_minutos - duracao_almoço_para_calculo
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
+                
                 tempo_nucleo_minutos = calcular_tempo_nucleo(entrada_valida, saida_valida, saida_almoco, retorno_almoco)
+                
+                # Se for intervalo automático, descontamos o almoço do tempo de núcleo (assumindo que ocorreu no núcleo)
+                if usar_intervalo_auto and duracao_almoco_minutos_real > 0:
+                    tempo_nucleo_minutos = max(0, tempo_nucleo_minutos - duracao_almoco_minutos_real)
+
                 if tempo_nucleo_minutos < 300:
                     warnings_html += '<div class="custom-warning">Atenção: Não cumpriu as 5h obrigatórias no período núcleo.</div>'
                 lista_de_permanencia = []
-                # Esta checagem usa 'hora_entrada' (original) de propósito, apenas para o aviso
                 if hora_entrada.time() < datetime.time(7, 0):
                     lista_de_permanencia.append("A entrada foi registrada antes das 7h")
                 if min_intervalo_real > 0 and duracao_almoco_minutos_real < min_intervalo_real:
