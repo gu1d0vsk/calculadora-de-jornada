@@ -1,1 +1,5 @@
 streamlit
+requests
+pytz
+feedparser
+beautifulsoup4
