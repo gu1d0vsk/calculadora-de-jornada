@@ -543,7 +543,6 @@ daily_forecast = get_daily_weather()
 if daily_forecast:
     st.markdown("---")
     st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>{daily_forecast}</p>", unsafe_allow_html=True)
-
 contagem_regressiva = gerar_contagem_regressiva_home_office()
 if contagem_regressiva:
     st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>{contagem_regressiva}</p>", unsafe_allow_html=True)
