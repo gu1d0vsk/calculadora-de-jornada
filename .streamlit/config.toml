@@ -1,0 +1,8 @@
+[theme]
+base = "dark"               # Força o tema claro, ignorando o sistema do usuário
+primaryColor = "#DD4F05"     # Cor laranja dos seus botões principais
+backgroundColor = "rgb(2, 19, 19)"  # Cor de fundo da página
+
+secondaryBackgroundColor = "#" # Cor de fundo da barra lateral e inputs
+textColor = ""        # Cor do texto
+font = "sans serif"
