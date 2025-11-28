@@ -530,7 +530,7 @@ if st.session_state.show_results:
                     valor_almoco_display = f"{almoco_valido_minutos:.0f}min*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu tempo de {termo_intervalo_real} válido foi menor que o mínimo de {min_intervalo_real} minutos. Para os cálculos, foi considerado o valor mínimo obrigatório.</p>"
                 elif usar_intervalo_auto and duracao_almoco_minutos_real > 0:
-                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min (Auto)"
+                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min "
 
                 # OBRIGAÇÃO LEGAL:
                 # O desconto do intervalo é: MAX(Obrigatório, Realizado_Valido)
