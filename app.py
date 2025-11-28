@@ -464,26 +464,15 @@ if st.session_state.show_results:
                         janela_inicio = saida_almoco.replace(hour=11, minute=0, second=0)
                         janela_fim = saida_almoco.replace(hour=16, minute=0, second=0)
 
-                        # Cálculo da parte VÁLIDA (dentro da janela)
-                        # Só considera o que intersecta com 11:00-16:00
+                        # Cálculo da parte VÁLIDA (interseção com 11:00-16:00)
                         inicio_valido = max(saida_almoco, janela_inicio)
                         fim_valido = min(retorno_almoco, janela_fim)
                         
                         if fim_valido > inicio_valido:
                             almoco_valido_minutos = (fim_valido - inicio_valido).total_seconds() / 60
                         
-                        # Cálculo da AUSÊNCIA (antes das 11h ou depois das 16h)
-                        # Parte 1: antes das 11h
-                        ausencia_antes = 0
-                        if saida_almoco < janela_inicio:
-                            ausencia_antes = (janela_inicio - saida_almoco).total_seconds() / 60
-                        
-                        # Parte 2: depois das 16h
-                        ausencia_depois = 0
-                        if retorno_almoco > janela_fim:
-                            ausencia_depois = (retorno_almoco - janela_fim).total_seconds() / 60
-                            
-                        desconto_ausencia = ausencia_antes + ausencia_depois
+                        # Cálculo da AUSÊNCIA: Tudo que não é válido
+                        desconto_ausencia = duracao_almoco_minutos_real - almoco_valido_minutos
 
                 else:
                     # Lógica para automático (Assume que o almoço foi 100% válido dentro da janela)
@@ -502,18 +491,13 @@ if st.session_state.show_results:
                     duracao_almoco_minutos_real = almoco_valido_minutos
                 # --------------------------------------------------
 
-                # Vamos calcular o almoço efetivo "físico" para descontar do bruto
-                # Se não for automático, o tempo "físico" é duracao_almoco_minutos_real
-                # Se for automático, é o estimado.
-                
                 almoco_fisico_minutos = duracao_almoco_minutos_real
 
                 trabalho_bruto_minutos = 0
                 if saida_valida > entrada_valida:
                     trabalho_bruto_minutos = (saida_valida - entrada_valida).total_seconds() / 60
                 
-                # Tempo "trabalhado" para fins de definir se precisa de 15 ou 30 min
-                # Descontamos todo o almoço físico (incluindo a parte inválida) para saber quanto tempo a pessoa ficou "na mesa"
+                # Tempo "trabalhado" efetivo para fins de definir regra de intervalo
                 tempo_trabalhado_efetivo = trabalho_bruto_minutos - almoco_fisico_minutos
                 
                 if tempo_trabalhado_efetivo > 360: min_intervalo_real, termo_intervalo_real = 30, "almoço"
@@ -530,17 +514,14 @@ if st.session_state.show_results:
                     valor_almoco_display = f"{almoco_valido_minutos:.0f}min*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu tempo de {termo_intervalo_real} válido foi menor que o mínimo de {min_intervalo_real} minutos. Para os cálculos, foi considerado o valor mínimo obrigatório.</p>"
                 elif usar_intervalo_auto and duracao_almoco_minutos_real > 0:
-                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min "
+                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min (Auto)"
 
-                # OBRIGAÇÃO LEGAL:
-                # O desconto do intervalo é: MAX(Obrigatório, Realizado_Valido)
-                # Exemplo: Obrigatório 30. Fez 20 válidos (10 fora).
-                # Desconta MAX(30, 20) = 30.
-                desconto_intervalo_oficial = max(min_intervalo_real, almoco_valido_minutos)
-                
                 # CÁLCULO FINAL:
-                # Trabalho Liquido = Bruto - Desconto_Intervalo_Oficial - Ausencia_Fora_Janela
-                # No exemplo acima: Bruto - 30 - 10.
+                # 1. Desconto do Intervalo Obrigatório: MAX(Obrigatório, Realizado_Válido)
+                # 2. Desconto de Ausência: (Total Realizado - Realizado Válido)
+                # Trabalho Líquido = Bruto - Desconto_Obrigatório - Ausência
+                
+                desconto_intervalo_oficial = max(min_intervalo_real, almoco_valido_minutos)
                 trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia
                 
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
