@@ -215,7 +215,7 @@ def formatar_duracao(minutos):
     return f"{horas}h {mins}min"
 
 # --- Interface do Web App com Streamlit ---
-st.set_page_config(page_title="Calculadora de Jornada", page_icon="🧮", layout="centered")
+st.set_page_config(page_title="Calculadora de Jornada", page_icon="⏱️", layout="centered")
 
 st.markdown("""
 <style>
