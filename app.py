@@ -116,7 +116,10 @@ def verificar_eventos_proximos():
     hoje = datetime.datetime.now(fuso_horario_brasil).date()
     mensagens = []
     eventos_agrupados = {}
+    
+    # Lista combinada de dicionários (certifique-se que FERIADOS no eventos.py está atualizado)
     todos_os_dicionarios = [FERIADOS, DATAS_PAGAMENTO_VA_VR, DATAS_LIMITE_BENEFICIOS, DATAS_PAGAMENTO_SALARIO, DATAS_PAGAMENTO_13, DATAS_ADIANTAMENTO_SALARIO, CESTA_NATALINA]
+    
     for d in todos_os_dicionarios:
         for data, nome in d.items():
             if data not in eventos_agrupados:
@@ -195,9 +198,7 @@ def calcular_tempo_nucleo(entrada, saida, saida_almoco, retorno_almoco):
     tempo_bruto_nucleo_segundos = (fim_trabalho_nucleo - inicio_trabalho_nucleo).total_seconds()
     tempo_almoco_no_nucleo_segundos = 0
     
-    # Se tiver horário de almoço explícito
     if saida_almoco and retorno_almoco:
-        # Verifica se o almoço intersecta com o horário núcleo
         inicio_almoco_sobreposicao = max(inicio_trabalho_nucleo, saida_almoco)
         fim_almoco_sobreposicao = min(fim_trabalho_nucleo, retorno_almoco)
         if fim_almoco_sobreposicao > inicio_almoco_sobreposicao:
@@ -214,7 +215,7 @@ def formatar_duracao(minutos):
     return f"{horas}h {mins}min"
 
 # --- Interface do Web App com Streamlit ---
-st.set_page_config(page_title="Calculadora de Jornada", page_icon="⌚", layout="centered")
+st.set_page_config(page_title="Calculadora de Jornada", page_icon="🧮", layout="centered")
 
 st.markdown("""
 <style>
@@ -481,12 +482,15 @@ if st.session_state.show_results:
                     if saida_valida > entrada_valida:
                          trabalho_bruto_temp = (saida_valida - entrada_valida).total_seconds() / 60
                     
-                    if trabalho_bruto_temp > 360:
-                        almoco_valido_minutos = 30 # Assume 30 min válidos
-                    elif trabalho_bruto_temp > 240:
-                        almoco_valido_minutos = 15 # Assume 15 min válidos
-                    else:
+                    # LOGICA NOVA AQUI (AJUSTADA)
+                    if trabalho_bruto_temp <= 240: # Até 4h brutas (presença)
                         almoco_valido_minutos = 0
+                    # A mágica: Se o tempo total menos 15 min for menor ou igual a 6h (360min),
+                    # então 15 min de intervalo são suficientes para manter a jornada legal <= 6h.
+                    elif (trabalho_bruto_temp - 15) <= 360: 
+                        almoco_valido_minutos = 15 
+                    else:
+                        almoco_valido_minutos = 30
                     
                     duracao_almoco_minutos_real = almoco_valido_minutos
                 # --------------------------------------------------
@@ -514,7 +518,7 @@ if st.session_state.show_results:
                     valor_almoco_display = f"{almoco_valido_minutos:.0f}min*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu tempo de {termo_intervalo_real} válido foi menor que o mínimo de {min_intervalo_real} minutos. Para os cálculos, foi considerado o valor mínimo obrigatório.</p>"
                 elif usar_intervalo_auto and duracao_almoco_minutos_real > 0:
-                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min (Auto)"
+                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>"
 
                 # CÁLCULO FINAL:
                 # 1. Desconto do Intervalo Obrigatório: MAX(Obrigatório, Realizado_Válido)
