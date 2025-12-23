@@ -6,12 +6,12 @@ def obter_mensagem_do_dia():
     fuso_horario_brasil = pytz.timezone("America/Sao_Paulo")
     hoje = datetime.date.today().weekday() # Segunda é 0 e Domingo é 6
     mensagens = {
-        0: "Segundou, EBA!!",
-        1: "Terça-feira 📌",
-        2: "Calma, ainda é Quarta",
-        3: "Quinta 📆",
-        4: "Sextou! Quem fez, fez.",
-        5: "Sábado",
-        6: "Domingo"
+        0: "Boas Festas!!🎉🍾",
+        1: "Boas Festas!!🎉🍾",
+        2: "Boas Festas!!🎉🍾",
+        3: "Boas Festas!!🎉🍾",
+        4: "Boas Festas!!🎉🍾",
+        5: "Boas Festas!!🎉🍾",
+        6: "Boas Festas!!🎉🍾"
     }
     return mensagens.get(hoje, "Calculadora de Jornada")
