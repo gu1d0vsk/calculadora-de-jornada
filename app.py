@@ -255,7 +255,7 @@ if not has_active_content:
     layout_css = """
     div.block-container {
         transform: translateY(17vh); /* Desktop: Centraliza bem */
-        transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in-out;
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.8s ease-in-out;
     }
     @media (max-width: 640px) {
         div.block-container {
@@ -268,7 +268,7 @@ else:
     layout_css = """
     div.block-container {
         transform: translateY(0);
-        transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
     
     /* Reduz foco da área de input */
