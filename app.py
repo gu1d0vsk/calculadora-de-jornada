@@ -189,7 +189,7 @@ def formatar_duracao(minutos):
     return f"{horas}h {mins}min"
 
 # --- Interface do Web App com Streamlit ---
-st.set_page_config(page_title="Calculadora de Jornada", page_icon="⏱️", layout="centered")
+st.set_page_config(page_title="Calculadora de Jornada", page_icon="🧮", layout="centered")
 
 #----------------------
 page_bg_img = """
@@ -255,7 +255,7 @@ if not has_active_content:
     layout_css = """
     div.block-container {
         transform: translateY(17vh); /* Desktop: Centraliza bem */
-        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.8s ease-in-out;
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in-out;
     }
     @media (max-width: 640px) {
         div.block-container {
@@ -268,14 +268,14 @@ else:
     layout_css = """
     div.block-container {
         transform: translateY(0);
-        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
     }
     
     /* Reduz foco da área de input */
     .main-title, .sub-title, div[data-testid="stTextInput"], div[data-testid="stButton"], div[data-testid="stCheckbox"] {
         opacity: 0.5;
         transform: scale(0.98);
-        transition: all 0.8s ease-in-out;
+        transition: all 0.2s ease-in-out;
     }
     
     /* Restaura foco ao passar o mouse */
@@ -337,7 +337,7 @@ div[data-testid="stTextInput"] input {{ border-radius: 1.5rem !important; text-a
 
 
     /* Animação de entrada dos resultados */
-    .results-container, .event-list-container.visible {{ animation: fadeIn 0.8s ease-out forwards; }}
+    .results-container, .event-list-container.visible {{ animation: fadeIn 0.4s ease-out forwards; }}
     @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
     
     .event-list-item {{ background-color: #cacaca3b00; padding: 10px; border-radius: 1.5rem; margin-bottom: 5px; text-align: center; }}
@@ -621,7 +621,7 @@ js_footer = f"""
         
         // Comportamento
         header.style.zIndex = "2147483647"; // Máximo z-index para ficar sobre tudo
-        header.style.backdropFilter = "blur(8px)"; // Blur mais forte
+        header.style.backdropFilter = "blur(0)"; // Blur mais forte
         header.style.display = "flex";
         header.style.justifyContent = "center";
         header.style.alignItems = "center";
