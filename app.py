@@ -94,7 +94,6 @@ def verificar_eventos_proximos():
     mensagens = []
     eventos_agrupados = {}
     
-    # LISTA UNIFICADA
     todos_os_dicionarios = [FERIADOS, DATAS_PAGAMENTO_VA_VR, DATAS_LIMITE_BENEFICIOS, DATAS_PAGAMENTO_SALARIO, DATAS_PAGAMENTO_13, DATAS_ADIANTAMENTO_SALARIO, CESTA_NATALINA]
     
     for d in todos_os_dicionarios:
@@ -110,22 +109,15 @@ def verificar_eventos_proximos():
             elif any("Data limite" in s for s in lista_nomes): emoji = "❗️"
             else: emoji = "🗓️"
             
-            # Limpa os nomes (tira parenteses e espaços)
             partes_evento = [nome.split('(')[0].strip() for nome in lista_nomes]
-
-            # Junta os nomes com vírgula e "e"
             if len(partes_evento) == 1: 
                 texto_eventos = partes_evento[0]
             else: 
                 texto_eventos = ", ".join(partes_evento[:-1]) + " e " + partes_evento[-1]
             
-            # Formata a mensagem de forma concisa
-            if delta.days == 0:
-                mensagem = f"{emoji} Hoje: {texto_eventos}"
-            elif delta.days == 1:
-                mensagem = f"{emoji} Amanhã: {texto_eventos}"
-            else:
-                mensagem = f"{emoji} {delta.days} dias: {texto_eventos}"
+            if delta.days == 0: mensagem = f"{emoji} Hoje: {texto_eventos}"
+            elif delta.days == 1: mensagem = f"{emoji} Amanhã: {texto_eventos}"
+            else: mensagem = f"{emoji} {delta.days} dias: {texto_eventos}"
                 
             mensagens.append(mensagem)
     return mensagens
@@ -139,14 +131,7 @@ def gerar_contagem_regressiva_home_office():
         dias_restantes = (data_home_office - hoje).days
         if dias_restantes < 0: return ""
 
-        # --- Cálculo de Dias Úteis ---
-        # Definimos o feriado de São Sebastião (RJ) e outros que desejar
-        feriados_rj = [
-            '2026-01-01', # Ano Novo
-            '2026-01-20', # São Sebastião (RJ)
-        ]
-        
-        # O numpy.busday_count calcula dias úteis entre datas (exclui o dia final)
+        feriados_rj = ['2026-01-01', '2026-01-20']
         dias_uteis = int(np.busday_count(hoje, data_home_office, holidays=feriados_rj))
         
         texto_dias = "dia" if dias_restantes == 1 else "dias"
@@ -155,6 +140,36 @@ def gerar_contagem_regressiva_home_office():
         return f"<strong>Integra II:</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis}) para o home office"
     except Exception as e:
         print(f"Erro ao gerar contagem regressiva: {e}")
+        return ""
+
+def gerar_contagem_regressiva_novatos():
+    try:
+        fuso_horario_brasil = pytz.timezone("America/Sao_Paulo")
+        hoje = datetime.datetime.now(fuso_horario_brasil).date()
+        
+        # 6 meses cravados da data de entrada (02/03/2026 -> 02/09/2026)
+        data_home_office_novos = datetime.date(2026, 9, 2)
+        
+        dias_restantes = (data_home_office_novos - hoje).days
+        if dias_restantes < 0: return ""
+
+        # Feriados relevantes entre Março e Setembro de 2026 no RJ
+        feriados_2026 = [
+            '2026-04-03', # Paixão de Cristo
+            '2026-04-21', # Tiradentes
+            '2026-04-23', # São Jorge (RJ)
+            '2026-05-01', # Dia do Trabalhador
+            '2026-06-04', # Corpus Christi
+        ]
+        
+        dias_uteis = int(np.busday_count(hoje, data_home_office_novos, holidays=feriados_2026))
+        
+        texto_dias = "dia" if dias_restantes == 1 else "dias"
+        texto_uteis = "dia útil" if dias_uteis == 1 else "úteis"
+        
+        return f"<strong>UltraNovos (Homeoffice):</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis})"
+    except Exception as e:
+        print(f"Erro ao gerar contagem regressiva dos novos: {e}")
         return ""
 
 def formatar_hora_input(input_str):
@@ -196,30 +211,21 @@ def formatar_duracao(minutos):
     mins = int(minutos % 60)
     return f"{horas}h {mins}min"
 
-# --- Interface do Web App com Streamlit ---
+# --- Interface do Web App ---
 st.set_page_config(page_title="Calculadora de Jornada", page_icon="🧮", layout="centered")
 
-#----------------------
 page_bg_img = """
 <style>
 [data-testid="stApp"] {
     background-image: linear-gradient(rgb(2, 45, 44) 0%, rgb(0, 21, 21) 100%);
     background-attachment: fixed;
 }
-
-[data-testid="stHeader"] {
-    background-color: rgba(0,0,0,0); /* Deixa a barra superior transparente */
-}
-
-/* Força texto claro (já que o fundo é escuro) */
-.stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, label, span {
-    color: #e0e0e0 !important;
-}
+[data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
+.stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, label, span { color: #e0e0e0 !important; }
 </style>
 """
-
 st.markdown(page_bg_img, unsafe_allow_html=True)
-# --- 1. RENDERIZAÇÃO DOS INPUTS E BOTÕES ---
+
 mensagem_do_dia = obter_mensagem_do_dia()
 st.markdown(f'<p class="main-title">{mensagem_do_dia}</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Informe seus horários para calcular a jornada diária</p>', unsafe_allow_html=True)
@@ -228,9 +234,18 @@ mensagens_eventos = verificar_eventos_proximos()
 
 col_buffer_1, col_main, col_buffer_2 = st.columns([1, 6, 1])
 with col_main:
-    entrada_str = st.text_input("Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
-    usar_intervalo_auto = st.checkbox("Intervalo Automático (Mínimo)", value=True, help="Calcula o desconto automático (30min ou 15min) sem precisar digitar os horários de almoço.")
     
+    entrada_str = st.text_input("Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
+    
+    # --- CHECKBOXES LADO A LADO ---
+    col_cb1, col_cb2 = st.columns(2)
+    with col_cb1:
+        usar_intervalo_auto = st.checkbox("Intervalo Automático", value=True, help="Desconto automático (30min ou 15min).")
+    with col_cb2:
+        tem_saida_extra = st.checkbox("Adicionar Saída Extra", value=False)
+    # ------------------------------
+
+    # Renderiza os inputs de Almoço apenas se não for automático
     if not usar_intervalo_auto:
         col1, col2 = st.columns(2)
         with col1: saida_almoco_str = st.text_input("Saída para o Almoço", key="saida_almoco")
@@ -238,19 +253,21 @@ with col_main:
     else:
         saida_almoco_str, retorno_almoco_str = "", ""
 
-    # --- NOVO BLOCO PARA SAÍDA EXTRA ---
-    tem_saida_extra = st.checkbox("Adicionar outra saída/ausência", value=False)
+    # Renderiza os inputs de Saída Extra apenas se o checkbox estiver marcado
     if tem_saida_extra:
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1: saida_extra_str = st.text_input("Saída Extra", key="saida_extra")
         with col_ex2: retorno_extra_str = st.text_input("Retorno Extra", key="retorno_extra")
     else:
         saida_extra_str, retorno_extra_str = "", ""
-    # -----------------------------------
 
     saida_real_str = st.text_input("Saída", key="saida_real")
+    
     col_calc, col_events = st.columns(2)
-    with col_calc: calculate_clicked = st.button("Calcular", use_container_width=True)
+    with col_calc: 
+        calculate_clicked = st.button("Calcular", use_container_width=True)
+        is_lactante = st.toggle("Lactante", value=False)
+        
     with col_events:
         event_button_text = "Próximos Eventos 🗓️" if mensagens_eventos else "Próximos Eventos"
         events_clicked = st.button(event_button_text, use_container_width=True)
@@ -265,38 +282,30 @@ if st.session_state.show_results and not entrada_str:
     st.warning("Por favor, preencha pelo menos o horário de entrada.")
     st.session_state.show_results = False
 
-# --- 3. LÓGICA DE CSS DINÂMICO OTIMIZADO PARA MOBILE ---
+# --- 3. LÓGICA DE CSS DINÂMICO ---
 has_active_content = st.session_state.show_results or st.session_state.show_events
 
 if not has_active_content:
-    # Estado Inicial
     layout_css = """
     div.block-container {
-        transform: translateY(17vh); /* Desktop: Centraliza bem */
+        transform: translateY(17vh);
         transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in-out;
     }
     @media (max-width: 640px) {
-        div.block-container {
-            transform: translateY(10vh); /* Mobile: Sobe mais para não ficar "caído" */
-        }
+        div.block-container { transform: translateY(10vh); }
     }
     """
 else:
-    # Estado Ativo: Posição original (0)
     layout_css = """
     div.block-container {
         transform: translateY(0);
         transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
     }
-    
-    /* Reduz foco da área de input */
-    .main-title, .sub-title, div[data-testid="stTextInput"], div[data-testid="stButton"], div[data-testid="stCheckbox"] {
+    .main-title, .sub-title, div[data-testid="stTextInput"], div[data-testid="stButton"]:not(:last-child), div[data-testid="stCheckbox"] {
         opacity: 0.5;
         transform: scale(0.98);
         transition: all 0.2s ease-in-out;
     }
-    
-    /* Restaura foco ao passar o mouse */
     .main-title:hover, .sub-title:hover, div[data-testid="stTextInput"]:hover, div[data-testid="stButton"]:hover, div[data-testid="stCheckbox"]:hover {
         opacity: 1;
         transform: scale(1);
@@ -304,37 +313,22 @@ else:
     """
 
 st.markdown(f"""
-  
 <style>
-
-    /* --- CSS "NUCLEAR" PARA LIMPAR A INTERFACE DO STREAMLIT --- */
-    
-    /* Esconde o rodapé padrão "Made with Streamlit" */
+    /* CSS NUCLEAR PARA LIMPAR STREAMLIT */
     footer {{visibility: hidden;}}
-    
-    /* Esconde o menu de 3 pontos no topo direito (Opcional - remove se quiser manter o menu) */
     #MainMenu {{visibility: hidden;}}
-    
-    /* Esconde a barra colorida no topo da tela */
     header {{visibility: hidden;}}
-    
-    /* Tenta esconder o botão de deploy/gerenciar app (A Coroa) */
     .stDeployButton {{display:none;}}
-    
-    /* Esconde ícones de status de execução */
     [data-testid="stStatusWidget"] {{display:none;}}
 
-    /* --------------------------------------------------------- */
-
-    /* Injeta o CSS dinâmico de animação que você já tinha */
     {layout_css}
 
-    /* CSS GERAL DO SEU APP */
-    .main .block-container {{ max-width: 800px; padding-bottom: 5rem; }} /* Padding extra pro footer não cobrir */
+    /* CSS GERAL */
+    .main .block-container {{ max-width: 800px; padding-bottom: 5rem; }} 
     .main-title {{ font-size: 2.2rem !important; font-weight: bold; text-align: center; }}
     .sub-title {{ color: gray; text-align: center; font-size: 1.25rem !important; }}
     
-    /* --- BOTÕES COM NEON (Efeito Hover) --- */
+    /* BOTÕES COM NEON */
     div[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stButton"] > button {{ 
         background-color: rgb(221, 79, 5) !important; color: #FFFFFF !important; border-radius: 4rem; border-color: transparent;
         transition: all 0.3s ease; 
@@ -349,12 +343,40 @@ st.markdown(f"""
     div[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stButton"] > button:hover {{
         box-shadow: 0 0 12px rgba(0, 80, 81, 0.8), 0 0 20px rgba(0, 80, 81, 0.4); transform: scale(1.02);
     }}
-div[data-testid="stTextInput"] input {{ border-radius: 1.5rem !important; text-align: center; font-weight: 600; }}
-        .main div[data-testid="stTextInput"] > label {{ text-align: center !important; width: 100%; display: block; }}
+    div[data-testid="stTextInput"] input {{ border-radius: 1.5rem !important; text-align: center; font-weight: 600; }}
+    .main div[data-testid="stTextInput"] > label {{ text-align: center !important; width: 100%; display: block; }}
     .st-b7 {{  background-color: rgba(12, 19, 14, 0.31) !important; }}
 
+    /* TOGGLE LACTANTE */
+    div[data-testid="stToggle"] {{
+        background-color: rgba(255, 255, 255, 0.03) !important; 
+        border: 1px solid rgba(255, 255, 255, 0.08) !important; 
+        border-radius: 20px !important; 
+        padding: 4px 14px 4px 4px !important;
+        margin-top: 5px !important; 
+        width: fit-content !important; 
+        display: inline-flex !important;
+        justify-content: flex-start !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    }}
+    
+    div[data-testid="stToggle"]:hover {{
+        background-color: rgba(0, 80, 81, 0.15) !important;
+        border: 1px solid rgba(0, 80, 81, 0.6) !important;
+        box-shadow: 0 2px 8px rgba(0, 80, 81, 0.3) !important;
+    }}
 
-    /* Animação de entrada dos resultados */
+    div[data-testid="stToggle"] label p {{
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        color: #b0b0b0 !important; 
+        text-transform: uppercase !important;
+        letter-spacing: 1.2px !important;
+        margin-left: 2px !important;
+    }}
+
+    /* Animações e Cards */
     .results-container, .event-list-container.visible {{ animation: fadeIn 0.4s ease-out forwards; }}
     @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
     
@@ -366,8 +388,7 @@ div[data-testid="stTextInput"] input {{ border-radius: 1.5rem !important; text-a
     .custom-error p {{ margin: 0.5rem 0 0 0; }}
     div[data-testid="stHeading"] a {{ display: none !important; }}
     div[data-testid="stMetric"] {{ background-color: transparent !important; padding: 0 !important; }}
-    div[data-testid="stMetric"] [data-testid="stMetricLabel"] p,
-    div[data-testid="stMetric"] [data-testid="stMetricValue"] {{ color: inherit !important; }}
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"] p, div[data-testid="stMetric"] [data-testid="stMetricValue"] {{ color: inherit !important; }}
     .section-container {{ text-align: center; margin-top: 1.5rem; }}
     .metric-custom {{ background-color: #F0F2F6; border-radius: 4rem; padding: 1rem; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; color: #31333f; }}
     .metric-almoco {{ background-color: #F0F2F6; }}
@@ -397,16 +418,13 @@ div[data-testid="stTextInput"] input {{ border-radius: 1.5rem !important; text-a
         .predictions-grid-container .metric-maximo {{ order: 3; }}
         .summary-grid-container {{ grid-template-columns: repeat(2, 1fr); }}
     }}
-    /* Estilos gerais para classes instáveis do Streamlit */
-   
-    ._link_gzau3_10 {{   display: none !important;}}
-    ##._link_gzau3_10 {{   display: none !important;}}
-    ##._profileContainer_gzau3_53 {{   display: none !important;}}
-    .st-emotion-cache-yfw52f hr {{    display: none !important;}}
-    .st-bv {{    font-weight: 800;}} .st-ay {{    font-size: 1.3rem;}} .st-aw {{    border-bottom-right-radius: 1.5rem;}} .st-av {{    border-top-right-radius: 1.5rem;}} .st-au {{    border-bottom-left-radius: 1.5rem;}} .st-at {{    border-top-left-radius: 1.5rem;}}
-      .st-b6 {{  border-bottom-color: rgba(38, 39, 48, 0) !important;}} .st-b5 {{  border-top-color: rgba(38, 39, 48, 0) !important;}} .st-b4 {{  border-right-color: rgba(38, 39, 48, 0) !important;}} .st-b3 {{  border-left-color: rgba(38, 39, 48, 0) !important;}}
+    
+    ._link_gzau3_10 {{ display: none !important; }}
+    .st-emotion-cache-yfw52f hr {{ display: none !important; }}
+    .st-bv {{ font-weight: 800; }} .st-ay {{ font-size: 1.3rem; }} .st-aw {{ border-bottom-right-radius: 1.5rem; }} .st-av {{ border-top-right-radius: 1.5rem; }} .st-au {{ border-bottom-left-radius: 1.5rem; }} .st-at {{ border-top-left-radius: 1.5rem; }}
+    .st-b6 {{ border-bottom-color: rgba(38, 39, 48, 0) !important; }} .st-b5 {{ border-top-color: rgba(38, 39, 48, 0) !important; }} .st-b4 {{ border-right-color: rgba(38, 39, 48, 0) !important; }} .st-b3 {{ border-left-color: rgba(38, 39, 48, 0) !important; }}
     .st-emotion-cache-yinll1 svg, .st-emotion-cache-ubko3j svg {{ display: none; }} 
-    .st-emotion-cache-467cry hr:not([size]) {{    display: none;}} .st-emotion-cache-zh2fnc {{    place-items: center; width: auto !important;}} .st-emotion-cache-3uj0rx hr:not([size]) {{ display: none;}} .st-emotion-cache-14vh5up, a._container_gzau3_1._viewerBadge_nim44_23, .st-emotion-cache-scp8yw.e3g0k5y6, img._profileImage_gzau3_78._lightThemeShadow_gzau3_95, ._container_gzau3_1, ._profileImage_gzau3_78, .st-emotion-cache-1sss6mo {{    display: none !important;}}
+    .st-emotion-cache-467cry hr:not([size]) {{ display: none; }} .st-emotion-cache-zh2fnc {{ place-items: center; width: auto !important; }} .st-emotion-cache-3uj0rx hr:not([size]) {{ display: none;}} .st-emotion-cache-14vh5up, a._container_gzau3_1._viewerBadge_nim44_23, .st-emotion-cache-scp8yw.e3g0k5y6, img._profileImage_gzau3_78._lightThemeShadow_gzau3_95, ._container_gzau3_1, ._profileImage_gzau3_78, .st-emotion-cache-1sss6mo {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -445,7 +463,6 @@ if st.session_state.show_results:
                 retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                 duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
 
-            # --- LÊ A SAÍDA EXTRA PARA AS PREVISÕES ---
             if tem_saida_extra and saida_extra_str and retorno_extra_str:
                 try:
                     saida_ext_prev = datetime.datetime.strptime(formatar_hora_input(saida_extra_str), "%H:%M")
@@ -453,8 +470,7 @@ if st.session_state.show_results:
                     if ret_ext_prev > saida_ext_prev:
                         duracao_extra_previsao = (ret_ext_prev - saida_ext_prev).total_seconds() / 60
                 except ValueError:
-                    pass # ignora erros enquanto você ainda está digitando a hora
-            # ------------------------------------------
+                    pass
             
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             tempo_antes_nucleo_min = 0
@@ -465,35 +481,41 @@ if st.session_state.show_results:
             if jornada_total_minima_min > 360: intervalo_obrigatorio_5h = 30
             else: intervalo_obrigatorio_5h = 15
 
-            # --- SOMA A DURAÇÃO EXTRA NOS CÁLCULOS DAS PREVISÕES ---
+            if is_lactante:
+                horas_padrao = 6
+                min_intervalo_padrao = 15
+            else:
+                horas_padrao = 8
+                min_intervalo_padrao = 30
+
             minutos_intervalo_5h = max(intervalo_obrigatorio_5h, duracao_almoço_previsao)
             hora_base_5h = max(entrada_valida_previsao, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=minutos_intervalo_5h + duracao_extra_previsao)
             hora_saida_5h = min(hora_saida_5h_calculada, limite_saida)
             
-            minutos_intervalo_demais = max(30, duracao_almoço_previsao)
-            hora_saida_8h_calculada = entrada_valida_previsao + datetime.timedelta(hours=8, minutes=minutos_intervalo_demais + duracao_extra_previsao)
-            hora_saida_8h = min(hora_saida_8h_calculada, limite_saida)
+            minutos_intervalo_demais = max(min_intervalo_padrao, duracao_almoço_previsao)
+            hora_saida_padrao_calculada = entrada_valida_previsao + datetime.timedelta(hours=horas_padrao, minutes=minutos_intervalo_demais + duracao_extra_previsao)
+            hora_saida_padrao = min(hora_saida_padrao_calculada, limite_saida)
             
-            hora_saida_10h_calculada = entrada_valida_previsao + datetime.timedelta(hours=10, minutes=minutos_intervalo_demais + duracao_extra_previsao)
+            minutos_intervalo_max = max(30, duracao_almoço_previsao)
+            hora_saida_10h_calculada = entrada_valida_previsao + datetime.timedelta(hours=10, minutes=minutos_intervalo_max + duracao_extra_previsao)
             hora_saida_10h = min(hora_saida_10h_calculada, limite_saida)
-            # -------------------------------------------------------
 
             duracao_5h_min = (hora_saida_5h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_5h - duracao_extra_previsao
-            duracao_8h_min = (hora_saida_8h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais - duracao_extra_previsao
-            duracao_10h_min = (hora_saida_10h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais - duracao_extra_previsao
+            duracao_padrao_min = (hora_saida_padrao - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_demais - duracao_extra_previsao
+            duracao_10h_min = (hora_saida_10h - entrada_valida_previsao).total_seconds() / 60 - minutos_intervalo_max - duracao_extra_previsao
             
             texto_desc_5h = f"({formatar_duracao(duracao_5h_min)})" if hora_saida_5h_calculada > limite_saida else "(5h no núcleo)"
-            texto_desc_8h = f"({formatar_duracao(duracao_8h_min)})" if hora_saida_8h_calculada > limite_saida else "(8h)"
+            texto_desc_padrao = f"({formatar_duracao(duracao_padrao_min)})" if hora_saida_padrao_calculada > limite_saida else f"({horas_padrao}h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
-            if minutos_intervalo_5h >= 30: termo_intervalo_5h = "almoço"
-            else: termo_intervalo_5h = "intervalo"
+            termo_intervalo_5h = "almoço" if minutos_intervalo_5h >= 30 else "intervalo"
+            termo_intervalo_padrao = "almoço" if minutos_intervalo_demais >= 30 else "intervalo"
+            termo_intervalo_max = "almoço" if minutos_intervalo_max >= 30 else "intervalo"
             
-            # Adiciona um aviso na previsão se houver saída extra
             texto_detalhe_extra = f" + {duracao_extra_previsao:.0f}m extra" if duracao_extra_previsao > 0 else ""
 
-            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_8h}</div><div class="value">{hora_saida_8h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de almoço{texto_detalhe_extra}</div></div></div></div>"""
+            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_padrao}</div><div class="value">{hora_saida_padrao.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_demais:.0f}min de {termo_intervalo_padrao}{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{minutos_intervalo_max:.0f}min de {termo_intervalo_max}{texto_detalhe_extra}</div></div></div></div>"""
             
             footnote, warnings_html = "", ""
             if saida_real_str:
@@ -537,7 +559,6 @@ if st.session_state.show_results:
                     
                     duracao_almoco_minutos_real = almoco_valido_minutos
 
-                # --- CÁLCULO DA SAÍDA EXTRA PARA O RESUMO DO DIA ---
                 duracao_extra_minutos = 0
                 saida_extra, retorno_extra = None, None
                 
@@ -546,7 +567,6 @@ if st.session_state.show_results:
                     retorno_extra = datetime.datetime.strptime(formatar_hora_input(retorno_extra_str), "%H:%M")
                     if retorno_extra < saida_extra: raise ValueError("O retorno extra deve ser depois da saída extra.")
                     duracao_extra_minutos = (retorno_extra - saida_extra).total_seconds() / 60
-                # ---------------------------------------------------
 
                 almoco_fisico_minutos = duracao_almoco_minutos_real
                 trabalho_bruto_minutos = 0
@@ -568,12 +588,11 @@ if st.session_state.show_results:
                      valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>"
 
                 desconto_intervalo_oficial = max(min_intervalo_real, almoco_valido_minutos)
-                
-                # Descontamos a duração extra do trabalho líquido
                 trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia - duracao_extra_minutos
-                saldo_banco_horas_minutos = trabalho_liquido_minutos - 480
                 
-                # Incluímos a saída extra no cálculo de tempo no núcleo
+                meta_diaria_minutos = 360 if is_lactante else 480
+                saldo_banco_horas_minutos = trabalho_liquido_minutos - meta_diaria_minutos
+                
                 tempo_nucleo_minutos = calcular_tempo_nucleo(entrada_valida, saida_valida, saida_almoco, retorno_almoco, saida_extra, retorno_extra)
                 
                 if usar_intervalo_auto and duracao_almoco_minutos_real > 0:
@@ -617,85 +636,57 @@ if st.session_state.show_results:
         finally:
             st.session_state.show_results = False
 
-# --- CÁLCULO DOS DADOS DO RODAPÉ ---
+# --- CÁLCULO DOS DADOS DO RODAPÉ (CABEÇALHO) ---
 daily_forecast = get_daily_weather()
 contagem_regressiva = gerar_contagem_regressiva_home_office()
+contagem_novatos = gerar_contagem_regressiva_novatos()
 
-# Monta o conteúdo HTML do rodapé combinando as variáveis
 footer_items = []
-if daily_forecast:
-    footer_items.append(f"<span>{daily_forecast}</span>")
+if daily_forecast: footer_items.append(f"<span>{daily_forecast}</span>")
+if contagem_regressiva: footer_items.append(f"<span>{contagem_regressiva}</span>")
+if contagem_novatos: footer_items.append(f"<span>{contagem_novatos}</span>")
 
-if contagem_regressiva:
-    footer_items.append(f"<span>{contagem_regressiva}</span>")
-
-# Une os itens com um separador visual
 footer_content = " <span style='opacity: 0.3; margin: 0 8px;'>|</span> ".join(footer_items)
+if not footer_content: footer_content = "&nbsp;"
 
-# Se não tiver nada, coloca um espaço vazio para não quebrar o layout
-if not footer_content:
-    footer_content = "&nbsp;"
-
-# --- INJEÇÃO DO RODAPÉ (AGORA NO TOPO/CABEÇALHO) VIA JAVASCRIPT ---
 import streamlit.components.v1 as components
 
 js_footer = f"""
 <script>
     function injectHeader() {{
         var headerId = "header-fixo-js";
-        
-        // Remove cabeçalho antigo para atualizar se houver reload
         var oldHeader = window.parent.document.getElementById(headerId);
         if (oldHeader) {{ oldHeader.remove(); }}
-
-        // Cria o elemento
         var header = window.parent.document.createElement("div");
         header.id = headerId;
-        
-        // Injeta o conteúdo gerado no Python
         header.innerHTML = `{footer_content}`;
-        
-        // --- ESTILOS CSS PARA O TOPO ---
         header.style.position = "fixed";
-        header.style.top = "0";          // Fixa no topo
+        header.style.top = "0";          
         header.style.left = "0";
         header.style.width = "100%";
         header.style.textAlign = "center";
-        
-        // Visual
-        header.style.backgroundColor = "rgba(240, 242, 246, 0.05)"; // Mais opaco para não misturar com o texto rolando por baixo
+        header.style.backgroundColor = "rgba(240, 242, 246, 0.05)"; 
         header.style.color = "#555";
         header.style.padding = "10px 10px";
         header.style.fontSize = "0.75rem";
-        header.style.borderBottom = "1px solid rgba(0,0,0,0)"; // Borda em baixo agora
-        
-        // Comportamento
-        header.style.zIndex = "2147483647"; // Máximo z-index para ficar sobre tudo
-        header.style.backdropFilter = "blur(0)"; // Blur mais forte
+        header.style.borderBottom = "1px solid rgba(0,0,0,0)"; 
+        header.style.zIndex = "2147483647"; 
+        header.style.backdropFilter = "blur(0)"; 
         header.style.display = "flex";
         header.style.justifyContent = "center";
         header.style.alignItems = "center";
         header.style.flexWrap = "wrap";
         header.style.lineHeight = "1.4";
         header.style.fontFamily = "sans-serif";
-    
-        // Injeta no corpo da página
         window.parent.document.body.appendChild(header);
-        
-        // --- AJUSTE DE ESPAÇAMENTO DO CONTEÚDO PRINCIPAL ---
-        // Empurra o conteúdo para baixo para não ficar escondido atrás da barra
         var mainContainer = window.parent.document.querySelector('.main .block-container');
         if (mainContainer) {{
-            mainContainer.style.marginTop = "0rem"; // Espaço extra no topo
+            mainContainer.style.marginTop = "0rem"; 
             mainContainer.style.paddingTop = "0rem";
         }}
-        
-        // Remove as linhas horizontais extras
         var hrs = window.parent.document.querySelectorAll('.st-emotion-cache-yfw52f hr');
         hrs.forEach(hr => hr.style.display = 'none');
     }}
-    
-    // Executa
     injectHeader();
 </script>
 """
@@ -708,7 +699,6 @@ components.html(
         const removeStreamlitElements = () => {
             const footer = window.parent.document.querySelector('footer');
             if (footer) { footer.style.display = 'none'; }
-
             const badge = window.parent.document.querySelector('div[class*="viewerBadge"]');
             if (badge) { badge.style.display = 'none'; }
         }
