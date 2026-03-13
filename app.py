@@ -441,7 +441,7 @@ if st.session_state.show_results:
             predictions_container_class = "predictions-wrapper"
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             
-            # --- NOVA INTELIGÊNCIA DE PAUSAS (AGRUPAMENTO) ---
+            # --- NOVA INTELIGÊNCIA: GRUPOS DE PAUSAS VÁLIDAS NA JANELA ---
             duracao_almoço_previsao = 0
             almoco_valido_previsao = 0
             almoco_fora_previsao = 0
@@ -455,7 +455,6 @@ if st.session_state.show_results:
                 jan_fim_prev = saida_almoco_prev.replace(hour=16, minute=0, second=0)
                 ini_valido_prev = max(saida_almoco_prev, jan_inicio_prev)
                 fim_valido_prev = min(retorno_almoco_prev, jan_fim_prev)
-                
                 if fim_valido_prev > ini_valido_prev:
                     almoco_valido_previsao = (fim_valido_prev - ini_valido_prev).total_seconds() / 60
                 almoco_fora_previsao = max(0, duracao_almoço_previsao - almoco_valido_previsao)
@@ -475,16 +474,14 @@ if st.session_state.show_results:
                         jan_fim_ext = saida_ext_prev.replace(hour=16, minute=0, second=0)
                         ext_ini_valido = max(saida_ext_prev, jan_inicio_ext)
                         ext_fim_valido = min(ret_ext_prev, jan_fim_ext)
-                        
                         if ext_fim_valido > ext_ini_valido:
                             extra_valido_previsao = (ext_fim_valido - ext_ini_valido).total_seconds() / 60
                         extra_fora_previsao = max(0, duracao_extra_previsao - extra_valido_previsao)
                 except ValueError:
                     pass
-
-            # Soma tudo que aconteceu dentro da janela de 11h às 16h
+            
             pausa_total_na_janela_prev = almoco_valido_previsao + extra_valido_previsao
-            # -------------------------------------------------
+            # -------------------------------------------------------------
             
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             tempo_antes_nucleo_min = 0
@@ -498,12 +495,11 @@ if st.session_state.show_results:
             if is_lactante:
                 horas_padrao = 6
                 min_intervalo_padrao = 15
-                meta_diaria_minutos = 360
             else:
                 horas_padrao = 8
                 min_intervalo_padrao = 30
-                meta_diaria_minutos = 480
 
+            # Substituímos a lógica de soma cega pela nova inteligência de "janela"
             add_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
             add_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
             add_max = max(30, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
@@ -569,9 +565,13 @@ if st.session_state.show_results:
                     if saida_valida > entrada_valida:
                          trabalho_bruto_temp = (saida_valida - entrada_valida).total_seconds() / 60
                     
-                    if trabalho_bruto_temp <= 240: almoco_valido_minutos = 0
-                    elif (trabalho_bruto_temp - 15) <= 360: almoco_valido_minutos = 15 
-                    else: almoco_valido_minutos = 30
+                    if trabalho_bruto_temp <= 240:
+                        almoco_valido_minutos = 0
+                    elif (trabalho_bruto_temp - 15) <= 360: 
+                        almoco_valido_minutos = 15 
+                    else:
+                        almoco_valido_minutos = 30
+                    
                     duracao_almoco_minutos_real = almoco_valido_minutos
 
                 duracao_extra_minutos = 0
@@ -602,7 +602,7 @@ if st.session_state.show_results:
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
                 else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
                 
-                # --- O GRANDE SEGREDO: Juntamos as pausas válidas ---
+                # --- O SEGREDO MÁGICO: Unimos as duas pausas feitas dentro da janela ---
                 pausa_total_na_janela = almoco_valido_minutos + extra_valido_minutos
                 
                 valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min"
@@ -617,15 +617,16 @@ if st.session_state.show_results:
                         valor_almoco_display = f"{almoco_valido_minutos:.0f}m + {extra_valido_minutos:.0f}m extra*"
                     footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Sua pausa total na janela (11h-16h) foi menor que o mínimo de {min_intervalo_real}m. O sistema descontou o valor mínimo obrigatório.</p>"
                 elif min_intervalo_real > 0 and extra_valido_minutos > 0 and almoco_valido_minutos < min_intervalo_real:
-                    # Se o almoço foi curto, mas a saída extra completou os 30 min:
                     valor_almoco_display = f"{almoco_valido_minutos:.0f}m + {extra_valido_minutos:.0f}m extra"
-                    footnote = f"<p style='font-size: 0.75rem; color: #54c679; text-align: center; margin-top: 1rem;'>*Sua saída extra ajudou a completar o intervalo mínimo obrigatório de {min_intervalo_real}m na janela!</p>"
+                    footnote = f"<p style='font-size: 0.75rem; color: #54c679; text-align: center; margin-top: 1rem;'>*Sua saída extra completou o intervalo mínimo de {min_intervalo_real}m na janela!</p>"
 
+                # O desconto oficial avalia o BOLO TODO de pausas dentro da janela
                 desconto_intervalo_oficial = max(min_intervalo_real, pausa_total_na_janela)
                 
-                # Descontamos o oficial da janela + as infrações de fora da janela
+                # E aqui o trabalho líquido subtrai o oficial + ausências que caíram fora da janela
                 trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia - extra_fora_minutos
                 
+                meta_diaria_minutos = 360 if is_lactante else 480
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - meta_diaria_minutos
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(entrada_valida, saida_valida, saida_almoco, retorno_almoco, saida_extra, retorno_extra)
@@ -642,7 +643,7 @@ if st.session_state.show_results:
                 if desconto_ausencia > 0: lista_de_permanencia.append(f"Parte do intervalo ({desconto_ausencia:.0f}min) realizado fora do horário permitido (11h às 16h)")
                 if min_intervalo_real > 0 and almoco_valido_minutos < min_intervalo_real:
                      if desconto_ausencia == 0 and pausa_total_na_janela < min_intervalo_real: 
-                         lista_de_permanencia.append(f"A pausa total ({pausa_total_na_janela:.0f}m) foi inferior a {min_intervalo_real} minutos")
+                         lista_de_permanencia.append(f"A pausa total na janela ({pausa_total_na_janela:.0f}m) foi inferior a {min_intervalo_real} minutos")
                 if trabalho_liquido_minutos > 600: lista_de_permanencia.append("A jornada de trabalho excedeu 10 horas")
                 if hora_saida_real.time() > datetime.time(20, 0): lista_de_permanencia.append("A saída foi registrada após as 20h")
                 if lista_de_permanencia:
