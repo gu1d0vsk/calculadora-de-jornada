@@ -137,7 +137,7 @@ def gerar_contagem_regressiva_home_office():
         texto_dias = "dia" if dias_restantes == 1 else "dias"
         texto_uteis = "dia útil" if dias_uteis == 1 else "úteis"
         
-        return f"<strong>Integra II:</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis}) para o home office"
+        return f"<strong>Integra II:</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis})"
     except Exception as e:
         print(f"Erro ao gerar contagem regressiva: {e}")
         return ""
@@ -167,7 +167,7 @@ def gerar_contagem_regressiva_novatos():
         texto_dias = "dia" if dias_restantes == 1 else "dias"
         texto_uteis = "dia útil" if dias_uteis == 1 else "úteis"
         
-        return f"<strong>UltraNovos (Homeoffice):</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis})"
+        return f"<strong>UltraNovos:</strong> {dias_restantes} {texto_dias} ({dias_uteis} {texto_uteis})"
     except Exception as e:
         print(f"Erro ao gerar contagem regressiva dos novos: {e}")
         return ""
@@ -446,48 +446,50 @@ if st.session_state.show_results:
             limite_saida = hora_entrada.replace(hour=20, minute=0, second=0, microsecond=0)
             
             # --- LÓGICA DE AGRUPAMENTO DE PAUSAS VÁLIDAS ---
+            saida_1_prev, ret_1_prev = None, None
+            saida_2_prev, ret_2_prev = None, None
+            
+            if not usar_intervalo_auto and saida_almoco_str and retorno_almoco_str:
+                try:
+                    saida_1_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
+                    ret_1_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
+                except ValueError: pass
+
+            if tem_saida_extra and saida_extra_str and retorno_extra_str:
+                try:
+                    saida_2_prev = datetime.datetime.strptime(formatar_hora_input(saida_extra_str), "%H:%M")
+                    ret_2_prev = datetime.datetime.strptime(formatar_hora_input(retorno_extra_str), "%H:%M")
+                except ValueError: pass
+
+            # --- A MÁGICA DA INVERSÃO INTELIGENTE ---
+            if saida_1_prev and ret_1_prev and saida_2_prev and ret_2_prev:
+                dur_1 = (ret_1_prev - saida_1_prev).total_seconds() / 60
+                dur_2 = (ret_2_prev - saida_2_prev).total_seconds() / 60
+                # Se a "saída extra" for maior que o "almoço", eles trocam de lugar na análise
+                if dur_2 > dur_1:
+                    saida_1_prev, saida_2_prev = saida_2_prev, saida_1_prev
+                    ret_1_prev, ret_2_prev = ret_2_prev, ret_1_prev
+            # -----------------------------------------
+
             duracao_almoço_previsao = 0
             almoco_valido_previsao = 0
             almoco_fora_previsao = 0
             
-            if not usar_intervalo_auto and saida_almoco_str and retorno_almoco_str:
-                saida_almoco_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
-                retorno_almoco_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
-                duracao_almoço_previsao = (retorno_almoco_prev - saida_almoco_prev).total_seconds() / 60
-                
-                jan_inicio_prev = saida_almoco_prev.replace(hour=11, minute=0, second=0)
-                jan_fim_prev = saida_almoco_prev.replace(hour=16, minute=0, second=0)
-                ini_valido_prev = max(saida_almoco_prev, jan_inicio_prev)
-                fim_valido_prev = min(retorno_almoco_prev, jan_fim_prev)
+            if saida_1_prev and ret_1_prev:
+                duracao_almoço_previsao = (ret_1_prev - saida_1_prev).total_seconds() / 60
+                jan_inicio_prev = saida_1_prev.replace(hour=11, minute=0, second=0)
+                jan_fim_prev = saida_1_prev.replace(hour=16, minute=0, second=0)
+                ini_valido_prev = max(saida_1_prev, jan_inicio_prev)
+                fim_valido_prev = min(ret_1_prev, jan_fim_prev)
                 
                 if fim_valido_prev > ini_valido_prev:
                     almoco_valido_previsao = (fim_valido_prev - ini_valido_prev).total_seconds() / 60
                 almoco_fora_previsao = max(0, duracao_almoço_previsao - almoco_valido_previsao)
 
             duracao_extra_previsao = 0
-            extra_valido_previsao = 0
-            extra_fora_previsao = 0
-            
-            if tem_saida_extra and saida_extra_str and retorno_extra_str:
-                try:
-                    saida_ext_prev = datetime.datetime.strptime(formatar_hora_input(saida_extra_str), "%H:%M")
-                    ret_ext_prev = datetime.datetime.strptime(formatar_hora_input(retorno_extra_str), "%H:%M")
-                    if ret_ext_prev > saida_ext_prev:
-                        duracao_extra_previsao = (ret_ext_prev - saida_ext_prev).total_seconds() / 60
-                        
-                        jan_inicio_ext = saida_ext_prev.replace(hour=11, minute=0, second=0)
-                        jan_fim_ext = saida_ext_prev.replace(hour=16, minute=0, second=0)
-                        ext_ini_valido = max(saida_ext_prev, jan_inicio_ext)
-                        ext_fim_valido = min(ret_ext_prev, jan_fim_ext)
-                        
-                        if ext_fim_valido > ext_ini_valido:
-                            extra_valido_previsao = (ext_fim_valido - ext_ini_valido).total_seconds() / 60
-                        extra_fora_previsao = max(0, duracao_extra_previsao - extra_valido_previsao)
-                except ValueError:
-                    pass
-            
-            pausa_total_na_janela_prev = almoco_valido_previsao + extra_valido_previsao
-            # -----------------------------------------------
+            if saida_2_prev and ret_2_prev:
+                if ret_2_prev > saida_2_prev:
+                    duracao_extra_previsao = (ret_2_prev - saida_2_prev).total_seconds() / 60
             
             hora_nucleo_inicio = hora_entrada.replace(hour=9, minute=0)
             tempo_antes_nucleo_min = 0
@@ -508,25 +510,30 @@ if st.session_state.show_results:
                 min_intervalo_padrao = 30
                 meta_diaria_minutos = 480
 
-            # --- CORREÇÃO DO CÁLCULO DE PREVISÃO COM INTERVALO AUTO + EXTRA ---
+            # --- CORREÇÃO DO CÁLCULO DE PREVISÃO COM O ALMOÇO ISOLADO DO EXTRA ---
             if usar_intervalo_auto:
                 add_5h = intervalo_obrigatorio_5h + duracao_extra_previsao
                 add_padrao = min_intervalo_padrao + duracao_extra_previsao
                 add_max = 30 + duracao_extra_previsao
                 
-                # Variáveis apenas para exibição visual correta
                 base_display_5h = intervalo_obrigatorio_5h
                 base_display_padrao = min_intervalo_padrao
                 base_display_max = 30
-            else:
-                add_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
-                add_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
-                add_max = max(30, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
                 
-                # Variáveis apenas para exibição visual correta
-                base_display_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev)
-                base_display_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev)
-                base_display_max = max(30, pausa_total_na_janela_prev)
+                texto_detalhe_extra = f" + {duracao_extra_previsao:.0f}m extra" if duracao_extra_previsao > 0 else ""
+            else:
+                add_5h = max(intervalo_obrigatorio_5h, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                add_padrao = max(min_intervalo_padrao, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                add_max = max(30, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                
+                base_display_5h = max(intervalo_obrigatorio_5h, almoco_valido_previsao)
+                base_display_padrao = max(min_intervalo_padrao, almoco_valido_previsao)
+                base_display_max = max(30, almoco_valido_previsao)
+                
+                texto_detalhe_extra = ""
+                total_extra_fora = almoco_fora_previsao + duracao_extra_previsao
+                if total_extra_fora > 0:
+                    texto_detalhe_extra = f" + {total_extra_fora:.0f}m extra/fora"
 
             hora_base_5h = max(entrada_valida_previsao, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=add_5h)
@@ -549,12 +556,6 @@ if st.session_state.show_results:
             termo_intervalo_5h = "almoço" if base_display_5h >= 30 else "intervalo"
             termo_intervalo_padrao = "almoço" if base_display_padrao >= 30 else "intervalo"
             termo_intervalo_max = "almoço" if base_display_max >= 30 else "intervalo"
-            
-            texto_detalhe_extra = ""
-            if not usar_intervalo_auto and (almoco_fora_previsao + extra_fora_previsao) > 0:
-                texto_detalhe_extra = f" + {(almoco_fora_previsao + extra_fora_previsao):.0f}m fora"
-            elif usar_intervalo_auto and duracao_extra_previsao > 0:
-                texto_detalhe_extra = f" + {duracao_extra_previsao:.0f}m extra"
 
             predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{base_display_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_padrao}</div><div class="value">{hora_saida_padrao.strftime('%H:%M')}</div><div class="details">{base_display_padrao:.0f}min de {termo_intervalo_padrao}{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{base_display_max:.0f}min de {termo_intervalo_max}{texto_detalhe_extra}</div></div></div></div>"""
             
@@ -571,7 +572,9 @@ if st.session_state.show_results:
                 
                 duracao_almoco_minutos_real = 0
                 saida_almoco, retorno_almoco = None, None
+                saida_extra, retorno_extra = None, None
                 almoco_valido_minutos, desconto_ausencia = 0, 0
+                duracao_extra_minutos = 0
 
                 if not usar_intervalo_auto:
                     if saida_almoco_str and retorno_almoco_str:
@@ -579,45 +582,40 @@ if st.session_state.show_results:
                         retorno_almoco = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
                         if retorno_almoco < saida_almoco: raise ValueError("A volta do almoço deve ser depois da saída para o almoço.")
                         
-                        duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
-                        janela_inicio = saida_almoco.replace(hour=11, minute=0, second=0)
-                        janela_fim = saida_almoco.replace(hour=16, minute=0, second=0)
-                        inicio_valido = max(saida_almoco, janela_inicio)
-                        fim_valido = min(retorno_almoco, janela_fim)
-                        if fim_valido > inicio_valido: almoco_valido_minutos = (fim_valido - inicio_valido).total_seconds() / 60
-                        desconto_ausencia = duracao_almoco_minutos_real - almoco_valido_minutos
-                else:
-                    trabalho_bruto_temp = 0
-                    if saida_valida > entrada_valida:
-                         trabalho_bruto_temp = (saida_valida - entrada_valida).total_seconds() / 60
-                    
-                    if trabalho_bruto_temp <= 240:
-                        almoco_valido_minutos = 0
-                    elif (trabalho_bruto_temp - 15) <= 360: 
-                        almoco_valido_minutos = 15 
-                    else:
-                        almoco_valido_minutos = 30
-                    
-                    duracao_almoco_minutos_real = almoco_valido_minutos
-
-                duracao_extra_minutos = 0
-                extra_valido_minutos = 0
-                extra_fora_minutos = 0
-                saida_extra, retorno_extra = None, None
-                
                 if tem_saida_extra and saida_extra_str and retorno_extra_str:
                     saida_extra = datetime.datetime.strptime(formatar_hora_input(saida_extra_str), "%H:%M")
                     retorno_extra = datetime.datetime.strptime(formatar_hora_input(retorno_extra_str), "%H:%M")
                     if retorno_extra < saida_extra: raise ValueError("O retorno extra deve ser depois da saída extra.")
-                    duracao_extra_minutos = (retorno_extra - saida_extra).total_seconds() / 60
+
+                # --- A MÁGICA DA INVERSÃO INTELIGENTE (Para o Resumo do Dia) ---
+                if not usar_intervalo_auto and saida_almoco and retorno_almoco and saida_extra and retorno_extra:
+                    dur_a = (retorno_almoco - saida_almoco).total_seconds() / 60
+                    dur_e = (retorno_extra - saida_extra).total_seconds() / 60
+                    if dur_e > dur_a:
+                        saida_almoco, saida_extra = saida_extra, saida_almoco
+                        retorno_almoco, retorno_extra = retorno_extra, retorno_almoco
+                # ----------------------------------------------------------------
+
+                if not usar_intervalo_auto and saida_almoco and retorno_almoco:
+                    duracao_almoco_minutos_real = (retorno_almoco - saida_almoco).total_seconds() / 60
+                    janela_inicio = saida_almoco.replace(hour=11, minute=0, second=0)
+                    janela_fim = saida_almoco.replace(hour=16, minute=0, second=0)
+                    inicio_valido = max(saida_almoco, janela_inicio)
+                    fim_valido = min(retorno_almoco, janela_fim)
+                    if fim_valido > inicio_valido: almoco_valido_minutos = (fim_valido - inicio_valido).total_seconds() / 60
+                    desconto_ausencia = duracao_almoco_minutos_real - almoco_valido_minutos
+                elif usar_intervalo_auto:
+                    trabalho_bruto_temp = 0
+                    if saida_valida > entrada_valida:
+                         trabalho_bruto_temp = (saida_valida - entrada_valida).total_seconds() / 60
                     
-                    janela_inicio_ex = saida_extra.replace(hour=11, minute=0, second=0)
-                    janela_fim_ex = saida_extra.replace(hour=16, minute=0, second=0)
-                    ex_inicio = max(saida_extra, janela_inicio_ex)
-                    ex_fim = min(retorno_extra, janela_fim_ex)
-                    if ex_fim > ex_inicio:
-                        extra_valido_minutos = (ex_fim - ex_inicio).total_seconds() / 60
-                    extra_fora_minutos = max(0, duracao_extra_minutos - extra_valido_minutos)
+                    if trabalho_bruto_temp <= 240: almoco_valido_minutos = 0
+                    elif (trabalho_bruto_temp - 15) <= 360: almoco_valido_minutos = 15 
+                    else: almoco_valido_minutos = 30
+                    duracao_almoco_minutos_real = almoco_valido_minutos
+                
+                if saida_extra and retorno_extra:
+                    duracao_extra_minutos = (retorno_extra - saida_extra).total_seconds() / 60
 
                 almoco_fisico_minutos = duracao_almoco_minutos_real
                 trabalho_bruto_minutos = 0
@@ -628,29 +626,22 @@ if st.session_state.show_results:
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
                 else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
                 
-                pausa_total_na_janela = almoco_valido_minutos + extra_valido_minutos
+                texto_extra_display = f" + {duracao_extra_minutos:.0f}m extra" if duracao_extra_minutos > 0 else ""
                 
-                valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min"
                 if usar_intervalo_auto and duracao_almoco_minutos_real > 0:
-                    if duracao_extra_minutos > 0:
-                        valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}m <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span> + {duracao_extra_minutos:.0f}m extra"
-                    else:
-                        valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>"
+                    valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}m <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>{texto_extra_display}"
                 elif desconto_ausencia > 0:
-                     valor_almoco_display = f"{almoco_valido_minutos:.0f}min (+{desconto_ausencia:.0f}min fora)"
-                     footnote = f"<p style='font-size: 0.75rem; color: #ff4b4b; text-align: center; margin-top: 1rem;'>*Atenção: {desconto_ausencia:.0f} minutos do seu intervalo principal foram fora da janela permitida (11h-16h) e contaram como ausência pura.</p>"
-                elif min_intervalo_real > 0 and pausa_total_na_janela < min_intervalo_real:
-                    valor_almoco_display = f"{almoco_valido_minutos:.0f}min*"
-                    if extra_valido_minutos > 0:
-                        valor_almoco_display = f"{almoco_valido_minutos:.0f}m + {extra_valido_minutos:.0f}m extra*"
-                    footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Sua pausa total na janela (11h-16h) foi menor que o mínimo de {min_intervalo_real}m. O sistema descontou o valor mínimo obrigatório.</p>"
-                elif min_intervalo_real > 0 and extra_valido_minutos > 0 and almoco_valido_minutos < min_intervalo_real:
-                    valor_almoco_display = f"{almoco_valido_minutos:.0f}m + {extra_valido_minutos:.0f}m extra"
-                    footnote = f"<p style='font-size: 0.75rem; color: #54c679; text-align: center; margin-top: 1rem;'>*Sua saída extra ajudou a completar o intervalo mínimo obrigatório de {min_intervalo_real}m na janela!</p>"
+                    valor_almoco_display = f"{almoco_valido_minutos:.0f}m (+{desconto_ausencia:.0f}m fora){texto_extra_display}"
+                    footnote = f"<p style='font-size: 0.75rem; color: #ff4b4b; text-align: center; margin-top: 1rem;'>*Atenção: {desconto_ausencia:.0f} minutos do seu almoço foram fora da janela (11h-16h) e contaram como ausência pura.</p>"
+                elif min_intervalo_real > 0 and almoco_valido_minutos < min_intervalo_real:
+                    valor_almoco_display = f"{almoco_valido_minutos:.0f}m*{texto_extra_display}"
+                    footnote = f"<p style='font-size: 0.75rem; color: gray; text-align: center; margin-top: 1rem;'>*Seu almoço na janela (11h-16h) foi de {almoco_valido_minutos:.0f}m, menor que o mínimo de {min_intervalo_real}m ininterruptos. O sistema descontou a diferença.</p>"
+                else:
+                    valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min{texto_extra_display}"
 
-                desconto_intervalo_oficial = max(min_intervalo_real, pausa_total_na_janela)
+                desconto_intervalo_oficial = max(min_intervalo_real, almoco_valido_minutos)
                 
-                trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia - extra_fora_minutos
+                trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia - duracao_extra_minutos
                 
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - meta_diaria_minutos
                 
@@ -667,8 +658,8 @@ if st.session_state.show_results:
                 if hora_entrada.time() < datetime.time(7, 0): lista_de_permanencia.append("A entrada foi registrada antes das 7h")
                 if desconto_ausencia > 0: lista_de_permanencia.append(f"Parte do intervalo ({desconto_ausencia:.0f}min) realizado fora do horário permitido (11h às 16h)")
                 if min_intervalo_real > 0 and almoco_valido_minutos < min_intervalo_real:
-                     if desconto_ausencia == 0 and pausa_total_na_janela < min_intervalo_real: 
-                         lista_de_permanencia.append(f"A pausa total na janela ({pausa_total_na_janela:.0f}m) foi inferior a {min_intervalo_real} minutos")
+                     if desconto_ausencia == 0: 
+                         lista_de_permanencia.append(f"O almoço na janela ({almoco_valido_minutos:.0f}m) foi inferior a {min_intervalo_real} minutos ininterruptos")
                 if trabalho_liquido_minutos > 600: lista_de_permanencia.append("A jornada de trabalho excedeu 10 horas")
                 if hora_saida_real.time() > datetime.time(20, 0): lista_de_permanencia.append("A saída foi registrada após as 20h")
                 if lista_de_permanencia:
@@ -701,6 +692,7 @@ if st.session_state.show_results:
 # --- CÁLCULO DOS DADOS DO RODAPÉ ---
 daily_forecast = get_daily_weather()
 contagem_regressiva = gerar_contagem_regressiva_home_office()
+contagem_novatos = gerar_contagem_regressiva_novatos() 
 
 footer_items = []
 if daily_forecast:
@@ -708,6 +700,9 @@ if daily_forecast:
 
 if contagem_regressiva:
     footer_items.append(f"<span>{contagem_regressiva}</span>")
+
+if contagem_novatos:
+    footer_items.append(f"<span>{contagem_novatos}</span>") 
 
 footer_content = " <span style='opacity: 0.3; margin: 0 8px;'>|</span> ".join(footer_items)
 
