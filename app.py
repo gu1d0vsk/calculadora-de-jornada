@@ -236,7 +236,12 @@ col_buffer_1, col_main, col_buffer_2 = st.columns([1, 6, 1])
 with col_main:
     
     entrada_str = st.text_input("Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
-    usar_intervalo_auto = st.checkbox("Intervalo Automático (Mínimo)", value=True)
+    
+    col_cb1, col_cb2 = st.columns(2)
+    with col_cb1:
+        usar_intervalo_auto = st.checkbox("Intervalo Automático (Mínimo)", value=True)
+    with col_cb2:
+        tem_saida_extra = st.checkbox("Adicionar outra saída/ausência", value=False)
 
     if not usar_intervalo_auto:
         col1, col2 = st.columns(2)
@@ -245,7 +250,6 @@ with col_main:
     else:
         saida_almoco_str, retorno_almoco_str = "", ""
 
-    tem_saida_extra = st.checkbox("Adicionar outra saída/ausência", value=False)
     if tem_saida_extra:
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1: saida_extra_str = st.text_input("Saída Extra", key="saida_extra")
@@ -258,7 +262,6 @@ with col_main:
     col_calc, col_events = st.columns(2)
     with col_calc: 
         calculate_clicked = st.button("Calcular", use_container_width=True)
-        # Toggle Minimalista logo abaixo do botão calcular
         is_lactante = st.toggle("Lactante", value=False)
         
     with col_events:
@@ -308,7 +311,6 @@ else:
 
 st.markdown(f"""
 <style>
-    /* CSS NUCLEAR PARA LIMPAR STREAMLIT */
     footer {{visibility: hidden;}}
     #MainMenu {{visibility: hidden;}}
     header {{visibility: hidden;}}
@@ -317,12 +319,10 @@ st.markdown(f"""
 
     {layout_css}
 
-    /* CSS GERAL */
     .main .block-container {{ max-width: 800px; padding-bottom: 5rem; }} 
     .main-title {{ font-size: 2.2rem !important; font-weight: bold; text-align: center; }}
     .sub-title {{ color: gray; text-align: center; font-size: 1.25rem !important; }}
     
-    /* BOTÕES COM NEON */
     div[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stButton"] > button {{ 
         background-color: rgb(221, 79, 5) !important; color: #FFFFFF !important; border-radius: 4rem; border-color: transparent;
         transition: all 0.3s ease; 
@@ -341,40 +341,32 @@ st.markdown(f"""
     .main div[data-testid="stTextInput"] > label {{ text-align: center !important; width: 100%; display: block; }}
     .st-b7 {{  background-color: rgba(12, 19, 14, 0.31) !important; }}
 
-    /* ======================================================== */
-    /* NOVA PÍLULA MINIMALISTA "LACTANTE" (Glassmorphism) */
     div[data-testid="stToggle"] {{
-        background-color: rgba(255, 255, 255, 0.03) !important; /* Fundo hiper sutil */
-        border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Borda quase invisível */
-        border-radius: 20px !important; /* Formato de pílula arredondada */
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 20px !important;
         padding: 4px 14px 4px 4px !important;
-        margin-top: 5px !important; /* Um leve respiro abaixo do botão calcular */
-        width: fit-content !important; /* Só ocupa o tamanho do texto */
+        margin-top: 5px !important;
+        width: fit-content !important;
         display: inline-flex !important;
         justify-content: flex-start !important;
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }}
-    
-    /* Efeito ao passar o mouse: acende com a cor verde do seu app */
     div[data-testid="stToggle"]:hover {{
         background-color: rgba(0, 80, 81, 0.15) !important;
         border: 1px solid rgba(0, 80, 81, 0.6) !important;
         box-shadow: 0 2px 8px rgba(0, 80, 81, 0.3) !important;
     }}
-
-    /* Estilizando o Texto do Toggle */
     div[data-testid="stToggle"] label p {{
         font-size: 0.75rem !important;
         font-weight: 600 !important;
-        color: #b0b0b0 !important; /* Cinza elegante */
+        color: #b0b0b0 !important;
         text-transform: uppercase !important;
         letter-spacing: 1.2px !important;
         margin-left: 2px !important;
     }}
-    /* ======================================================== */
 
-    /* Animações e Cards */
     .results-container, .event-list-container.visible {{ animation: fadeIn 0.4s ease-out forwards; }}
     @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
     
@@ -516,9 +508,25 @@ if st.session_state.show_results:
                 min_intervalo_padrao = 30
                 meta_diaria_minutos = 480
 
-            add_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
-            add_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
-            add_max = max(30, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
+            # --- CORREÇÃO DO CÁLCULO DE PREVISÃO COM INTERVALO AUTO + EXTRA ---
+            if usar_intervalo_auto:
+                add_5h = intervalo_obrigatorio_5h + duracao_extra_previsao
+                add_padrao = min_intervalo_padrao + duracao_extra_previsao
+                add_max = 30 + duracao_extra_previsao
+                
+                # Variáveis apenas para exibição visual correta
+                base_display_5h = intervalo_obrigatorio_5h
+                base_display_padrao = min_intervalo_padrao
+                base_display_max = 30
+            else:
+                add_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
+                add_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
+                add_max = max(30, pausa_total_na_janela_prev) + almoco_fora_previsao + extra_fora_previsao
+                
+                # Variáveis apenas para exibição visual correta
+                base_display_5h = max(intervalo_obrigatorio_5h, pausa_total_na_janela_prev)
+                base_display_padrao = max(min_intervalo_padrao, pausa_total_na_janela_prev)
+                base_display_max = max(30, pausa_total_na_janela_prev)
 
             hora_base_5h = max(entrada_valida_previsao, hora_nucleo_inicio)
             hora_saida_5h_calculada = hora_base_5h + datetime.timedelta(hours=5, minutes=add_5h)
@@ -538,15 +546,17 @@ if st.session_state.show_results:
             texto_desc_padrao = f"({formatar_duracao(duracao_padrao_min)})" if hora_saida_padrao_calculada > limite_saida else f"({horas_padrao}h)"
             texto_desc_10h = f"({formatar_duracao(duracao_10h_min)})" if hora_saida_10h_calculada > limite_saida else "(10h)"
 
-            termo_intervalo_5h = "almoço" if add_5h >= 30 else "intervalo"
-            termo_intervalo_padrao = "almoço" if add_padrao >= 30 else "intervalo"
-            termo_intervalo_max = "almoço" if add_max >= 30 else "intervalo"
+            termo_intervalo_5h = "almoço" if base_display_5h >= 30 else "intervalo"
+            termo_intervalo_padrao = "almoço" if base_display_padrao >= 30 else "intervalo"
+            termo_intervalo_max = "almoço" if base_display_max >= 30 else "intervalo"
             
             texto_detalhe_extra = ""
-            if (almoco_fora_previsao + extra_fora_previsao) > 0:
+            if not usar_intervalo_auto and (almoco_fora_previsao + extra_fora_previsao) > 0:
                 texto_detalhe_extra = f" + {(almoco_fora_previsao + extra_fora_previsao):.0f}m fora"
+            elif usar_intervalo_auto and duracao_extra_previsao > 0:
+                texto_detalhe_extra = f" + {duracao_extra_previsao:.0f}m extra"
 
-            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{add_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_padrao}</div><div class="value">{hora_saida_padrao.strftime('%H:%M')}</div><div class="details">{add_padrao:.0f}min de {termo_intervalo_padrao}{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{add_max:.0f}min de {termo_intervalo_max}{texto_detalhe_extra}</div></div></div></div>"""
+            predictions_html = f"""<div class='section-container'><h3>Previsões de Saída</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_saida_5h.strftime('%H:%M')}</div><div class="details">{base_display_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Jornada Padrão {texto_desc_padrao}</div><div class="value">{hora_saida_padrao.strftime('%H:%M')}</div><div class="details">{base_display_padrao:.0f}min de {termo_intervalo_padrao}{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_saida_10h.strftime('%H:%M')}</div><div class="details">{base_display_max:.0f}min de {termo_intervalo_max}{texto_detalhe_extra}</div></div></div></div>"""
             
             footnote, warnings_html = "", ""
             if saida_real_str:
@@ -618,12 +628,14 @@ if st.session_state.show_results:
                 elif tempo_trabalhado_efetivo > 240: min_intervalo_real, termo_intervalo_real = 15, "intervalo"
                 else: min_intervalo_real, termo_intervalo_real = 0, "intervalo"
                 
-                # --- O SEGREDO MÁGICO: Unimos as duas pausas feitas dentro da janela ---
                 pausa_total_na_janela = almoco_valido_minutos + extra_valido_minutos
                 
                 valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min"
                 if usar_intervalo_auto and duracao_almoco_minutos_real > 0:
-                     valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>"
+                    if duracao_extra_minutos > 0:
+                        valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}m <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span> + {duracao_extra_minutos:.0f}m extra"
+                    else:
+                        valor_almoco_display = f"{duracao_almoco_minutos_real:.0f}min <span style='font-size: 0.85rem; font-weight: 400; color: #5a5a5a;'>(Auto)</span>"
                 elif desconto_ausencia > 0:
                      valor_almoco_display = f"{almoco_valido_minutos:.0f}min (+{desconto_ausencia:.0f}min fora)"
                      footnote = f"<p style='font-size: 0.75rem; color: #ff4b4b; text-align: center; margin-top: 1rem;'>*Atenção: {desconto_ausencia:.0f} minutos do seu intervalo principal foram fora da janela permitida (11h-16h) e contaram como ausência pura.</p>"
@@ -636,13 +648,10 @@ if st.session_state.show_results:
                     valor_almoco_display = f"{almoco_valido_minutos:.0f}m + {extra_valido_minutos:.0f}m extra"
                     footnote = f"<p style='font-size: 0.75rem; color: #54c679; text-align: center; margin-top: 1rem;'>*Sua saída extra ajudou a completar o intervalo mínimo obrigatório de {min_intervalo_real}m na janela!</p>"
 
-                # Desconto oficial é o BOLO TODO de pausas dentro da janela
                 desconto_intervalo_oficial = max(min_intervalo_real, pausa_total_na_janela)
                 
-                # E o trabalho líquido subtrai o oficial + ausências fora da janela
                 trabalho_liquido_minutos = trabalho_bruto_minutos - desconto_intervalo_oficial - desconto_ausencia - extra_fora_minutos
                 
-                # Desconta 6h (Lactante) ou 8h (Padrão)
                 saldo_banco_horas_minutos = trabalho_liquido_minutos - meta_diaria_minutos
                 
                 tempo_nucleo_minutos = calcular_tempo_nucleo(entrada_valida, saida_valida, saida_almoco, retorno_almoco, saida_extra, retorno_extra)
@@ -693,24 +702,19 @@ if st.session_state.show_results:
 daily_forecast = get_daily_weather()
 contagem_regressiva = gerar_contagem_regressiva_home_office()
 
-# Monta o conteúdo HTML do rodapé combinando as variáveis
 footer_items = []
 if daily_forecast:
-    # Remove tags P e centralização que possam vir da função original se houver, 
-    # ou usa o texto cru. Como sua função retorna texto puro com pipes, está ótimo.
     footer_items.append(f"<span>{daily_forecast}</span>")
 
 if contagem_regressiva:
     footer_items.append(f"<span>{contagem_regressiva}</span>")
 
-# Une os itens com um separador visual
 footer_content = " <span style='opacity: 0.3; margin: 0 8px;'>|</span> ".join(footer_items)
 
-# Se não tiver nada, coloca um espaço vazio para não quebrar o layout
 if not footer_content:
     footer_content = "&nbsp;"
 
-# --- INJEÇÃO DO RODAPÉ (AGORA NO TOPO/CABEÇALHO) VIA JAVASCRIPT ---
+# --- INJEÇÃO DO RODAPÉ VIA JAVASCRIPT ---
 import streamlit.components.v1 as components
 
 js_footer = f"""
@@ -718,34 +722,28 @@ js_footer = f"""
     function injectHeader() {{
         var headerId = "header-fixo-js";
         
-        // Remove cabeçalho antigo para atualizar se houver reload
         var oldHeader = window.parent.document.getElementById(headerId);
         if (oldHeader) {{ oldHeader.remove(); }}
 
-        // Cria o elemento
         var header = window.parent.document.createElement("div");
         header.id = headerId;
         
-        // Injeta o conteúdo gerado no Python
         header.innerHTML = `{footer_content}`;
         
-        // --- ESTILOS CSS PARA O TOPO ---
         header.style.position = "fixed";
-        header.style.top = "0";          // Fixa no topo
+        header.style.top = "0";          
         header.style.left = "0";
         header.style.width = "100%";
         header.style.textAlign = "center";
         
-        // Visual
-        header.style.backgroundColor = "rgba(240, 242, 246, 0.05)"; // Mais opaco para não misturar com o texto rolando por baixo
+        header.style.backgroundColor = "rgba(240, 242, 246, 0.05)"; 
         header.style.color = "#555";
         header.style.padding = "10px 10px";
         header.style.fontSize = "0.75rem";
-        header.style.borderBottom = "1px solid rgba(0,0,0,0)"; // Borda em baixo agora
+        header.style.borderBottom = "1px solid rgba(0,0,0,0)"; 
         
-        // Comportamento
-        header.style.zIndex = "2147483647"; // Máximo z-index para ficar sobre tudo
-        header.style.backdropFilter = "blur(0)"; // Blur mais forte
+        header.style.zIndex = "2147483647"; 
+        header.style.backdropFilter = "blur(0)"; 
         header.style.display = "flex";
         header.style.justifyContent = "center";
         header.style.alignItems = "center";
@@ -753,23 +751,18 @@ js_footer = f"""
         header.style.lineHeight = "1.4";
         header.style.fontFamily = "sans-serif";
     
-        // Injeta no corpo da página
         window.parent.document.body.appendChild(header);
         
-        // --- AJUSTE DE ESPAÇAMENTO DO CONTEÚDO PRINCIPAL ---
-        // Empurra o conteúdo para baixo para não ficar escondido atrás da barra
         var mainContainer = window.parent.document.querySelector('.main .block-container');
         if (mainContainer) {{
-            mainContainer.style.marginTop = "0rem"; // Espaço extra no topo
+            mainContainer.style.marginTop = "0rem"; 
             mainContainer.style.paddingTop = "0rem";
         }}
         
-        // Remove as linhas horizontais extras
         var hrs = window.parent.document.querySelectorAll('.st-emotion-cache-yfw52f hr');
         hrs.forEach(hr => hr.style.display = 'none');
     }}
     
-    // Executa
     injectHeader();
 </script>
 """
@@ -790,46 +783,6 @@ components.html(
         const observer = new MutationObserver(() => {
             removeStreamlitElements();
         });
-        observer.observe(window.parent.document.body, { childList: true, subtree: true });
-    </script>
-    """,
-    height=0,
-)
-
-components.html(js_footer, height=0)
-
-components.html(
-    """
-    <script>
-        const removeStreamlitElements = () => {
-            // Alvo: O rodapé padrão (onde fica o "Made with Streamlit")
-            const footer = window.parent.document.querySelector('footer');
-            if (footer) {
-                footer.style.display = 'none';
-            }
-
-            // Alvo: O botão vermelho específico "Hosted with Streamlit" (caso seja separado do footer)
-            // Eles costumam mudar a classe, mas geralmente está numa div com 'viewerBadge'
-            const badge = window.parent.document.querySelector('div[class*="viewerBadge"]');
-            if (badge) {
-                badge.style.display = 'none';
-            }
-            
-            // Opcional: Remover o menu de hamburguer do topo (caso queira limpar tudo)
-            // const header = window.parent.document.querySelector('header');
-            // if (header) {
-            //    header.style.display = 'none';
-            // }
-        }
-
-        // Tenta rodar assim que carrega
-        removeStreamlitElements();
-
-        // Como o Streamlit as vezes recarrega elementos, vamos garantir com um observer
-        const observer = new MutationObserver(() => {
-            removeStreamlitElements();
-        });
-        
         observer.observe(window.parent.document.body, { childList: true, subtree: true });
     </script>
     """,
