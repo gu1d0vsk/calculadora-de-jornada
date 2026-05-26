@@ -235,7 +235,14 @@ mensagens_eventos = verificar_eventos_proximos()
 col_buffer_1, col_main, col_buffer_2 = st.columns([1, 6, 1])
 with col_main:
     
-    entrada_str = st.text_input("Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
+    modo_calculo = st.radio("O que você quer descobrir?", ["Que horas posso sair", "Que horas devo chegar"], horizontal=True)
+    
+    if modo_calculo == "Que horas posso sair":
+        entrada_str = st.text_input("Sua Entrada", key="entrada", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
+        saida_desejada_str = ""
+    else:
+        saida_desejada_str = st.text_input("Sua Saída Desejada", key="saida_des", help="formatos aceitos:\nHMM, HHMM ou HH:MM")
+        entrada_str = ""
     
     col_cb1, col_cb2 = st.columns(2)
     with col_cb1:
@@ -257,8 +264,11 @@ with col_main:
     else:
         saida_extra_str, retorno_extra_str = "", ""
 
-    saida_real_str = st.text_input("Saída", key="saida_real")
-    
+    if modo_calculo == "Que horas posso sair":
+        saida_real_str = st.text_input("Saída Real (Opcional - p/ Resumo do Dia)", key="saida_real")
+    else:
+        saida_real_str = ""
+        
     col_calc, col_events = st.columns(2)
     with col_calc: 
         calculate_clicked = st.button("Calcular", use_container_width=True)
@@ -274,9 +284,13 @@ if 'show_results' not in st.session_state: st.session_state.show_results = False
 
 if events_clicked: st.session_state.show_events = not st.session_state.show_events
 if calculate_clicked: st.session_state.show_results = True
-if st.session_state.show_results and not entrada_str:
-    st.warning("Por favor, preencha pelo menos o horário de entrada.")
-    st.session_state.show_results = False
+if st.session_state.show_results:
+    if modo_calculo == "Que horas posso sair" and not entrada_str:
+        st.warning("Por favor, preencha o horário de entrada.")
+        st.session_state.show_results = False
+    elif modo_calculo == "Que horas devo chegar" and not saida_desejada_str:
+        st.warning("Por favor, preencha o horário da saída desejada.")
+        st.session_state.show_results = False
 
 # --- 3. LÓGICA DE CSS DINÂMICO ---
 has_active_content = st.session_state.show_results or st.session_state.show_events
@@ -435,7 +449,7 @@ if st.session_state.show_events:
 
 results_placeholder = st.empty()
 if st.session_state.show_results:
-    if entrada_str:
+    if modo_calculo == "Que horas posso sair" and entrada_str:
         try:
             hora_entrada = datetime.datetime.strptime(formatar_hora_input(entrada_str), "%H:%M")
             
@@ -680,6 +694,132 @@ if st.session_state.show_results:
                     st.markdown(summary_grid_html, unsafe_allow_html=True)
                     st.markdown(footnote, unsafe_allow_html=True)
                 st.markdown(warnings_html, unsafe_allow_html=True)
+            st.components.v1.html("""<script>setTimeout(function() { const resultsEl = window.parent.document.querySelector('.results-container'); if (resultsEl) { resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 100);</script>""", height=0)
+
+        except ValueError as e:
+            st.error(f"Erro: {e}")
+        except Exception as e:
+            st.error(f"Ocorreu um erro inesperado: {e}")
+        finally:
+            st.session_state.show_results = False
+
+    elif modo_calculo == "Que horas devo chegar" and saida_desejada_str:
+        try:
+            hora_saida_des = datetime.datetime.strptime(formatar_hora_input(saida_desejada_str), "%H:%M")
+            
+            limite_saida_previsao = hora_saida_des.replace(hour=20, minute=0, second=0, microsecond=0)
+            saida_valida_previsao = min(hora_saida_des, limite_saida_previsao)
+            limite_entrada = hora_saida_des.replace(hour=7, minute=0, second=0, microsecond=0)
+            
+            predictions_container_class = "predictions-wrapper"
+            
+            saida_1_prev, ret_1_prev = None, None
+            saida_2_prev, ret_2_prev = None, None
+            
+            if not usar_intervalo_auto and saida_almoco_str and retorno_almoco_str:
+                try:
+                    saida_1_prev = datetime.datetime.strptime(formatar_hora_input(saida_almoco_str), "%H:%M")
+                    ret_1_prev = datetime.datetime.strptime(formatar_hora_input(retorno_almoco_str), "%H:%M")
+                except ValueError: pass
+
+            if tem_saida_extra and saida_extra_str and retorno_extra_str:
+                try:
+                    saida_2_prev = datetime.datetime.strptime(formatar_hora_input(saida_extra_str), "%H:%M")
+                    ret_2_prev = datetime.datetime.strptime(formatar_hora_input(retorno_extra_str), "%H:%M")
+                except ValueError: pass
+
+            if saida_1_prev and ret_1_prev and saida_2_prev and ret_2_prev:
+                dur_1 = (ret_1_prev - saida_1_prev).total_seconds() / 60
+                dur_2 = (ret_2_prev - saida_2_prev).total_seconds() / 60
+                if dur_2 > dur_1:
+                    saida_1_prev, saida_2_prev = saida_2_prev, saida_1_prev
+                    ret_1_prev, ret_2_prev = ret_2_prev, ret_1_prev
+
+            duracao_almoço_previsao = 0
+            almoco_valido_previsao = 0
+            almoco_fora_previsao = 0
+            
+            if saida_1_prev and ret_1_prev:
+                duracao_almoço_previsao = (ret_1_prev - saida_1_prev).total_seconds() / 60
+                jan_inicio_prev = saida_1_prev.replace(hour=11, minute=0, second=0)
+                jan_fim_prev = saida_1_prev.replace(hour=16, minute=0, second=0)
+                ini_valido_prev = max(saida_1_prev, jan_inicio_prev)
+                fim_valido_prev = min(ret_1_prev, jan_fim_prev)
+                
+                if fim_valido_prev > ini_valido_prev:
+                    almoco_valido_previsao = (fim_valido_prev - ini_valido_prev).total_seconds() / 60
+                almoco_fora_previsao = max(0, duracao_almoço_previsao - almoco_valido_previsao)
+
+            duracao_extra_previsao = 0
+            if saida_2_prev and ret_2_prev:
+                if ret_2_prev > saida_2_prev:
+                    duracao_extra_previsao = (ret_2_prev - saida_2_prev).total_seconds() / 60
+            
+            if is_lactante:
+                horas_padrao = 6
+                min_intervalo_padrao = 15
+            else:
+                horas_padrao = 8
+                min_intervalo_padrao = 30
+
+            intervalo_obrigatorio_5h = 15 
+
+            if usar_intervalo_auto:
+                add_5h = intervalo_obrigatorio_5h + duracao_extra_previsao
+                add_padrao = min_intervalo_padrao + duracao_extra_previsao
+                add_max = 30 + duracao_extra_previsao
+                base_display_5h = intervalo_obrigatorio_5h
+                base_display_padrao = min_intervalo_padrao
+                base_display_max = 30
+                texto_detalhe_extra = f" + {duracao_extra_previsao:.0f}m extra" if duracao_extra_previsao > 0 else ""
+            else:
+                add_5h = max(15, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                add_padrao = max(min_intervalo_padrao, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                add_max = max(30, almoco_valido_previsao) + almoco_fora_previsao + duracao_extra_previsao
+                base_display_5h = max(15, almoco_valido_previsao)
+                base_display_padrao = max(min_intervalo_padrao, almoco_valido_previsao)
+                base_display_max = max(30, almoco_valido_previsao)
+                texto_detalhe_extra = ""
+                total_extra_fora = almoco_fora_previsao + duracao_extra_previsao
+                if total_extra_fora > 0:
+                    texto_detalhe_extra = f" + {total_extra_fora:.0f}m extra/fora"
+
+            hora_base_5h_saida = min(saida_valida_previsao, saida_valida_previsao.replace(hour=18, minute=0))
+            hora_entrada_5h_calculada = hora_base_5h_saida - datetime.timedelta(hours=5, minutes=add_5h)
+            
+            aviso_impossivel_5h = ""
+            if hora_entrada_5h_calculada < saida_valida_previsao.replace(hour=9, minute=0):
+                hora_entrada_5h = max(hora_entrada_5h_calculada, limite_entrada)
+                texto_desc_5h = "(Última entrada p/ 5h núcleo)"
+                if hora_base_5h_saida < saida_valida_previsao.replace(hour=14, minute=0):
+                    texto_desc_5h = "(Impossível 5h núcleo)"
+                    aviso_impossivel_5h = '<div class="custom-warning">Atenção: Saindo nesse horário, é impossível completar as 5h dentro do horário núcleo (09:00 - 18:00).</div>'
+            else:
+                hora_entrada_5h = hora_entrada_5h_calculada
+                texto_desc_5h = "(Última entrada p/ 5h núcleo)"
+                
+            hora_entrada_padrao_calculada = saida_valida_previsao - datetime.timedelta(hours=horas_padrao, minutes=add_padrao)
+            hora_entrada_padrao = max(hora_entrada_padrao_calculada, limite_entrada)
+            
+            hora_entrada_10h_calculada = saida_valida_previsao - datetime.timedelta(hours=10, minutes=add_max)
+            hora_entrada_10h = max(hora_entrada_10h_calculada, limite_entrada)
+
+            texto_desc_padrao = f"({horas_padrao}h)"
+            if hora_entrada_padrao_calculada < limite_entrada: texto_desc_padrao = "(Mais cedo possível)"
+            texto_desc_10h = "(10h max)"
+            if hora_entrada_10h_calculada < limite_entrada: texto_desc_10h = "(Primeira entrada)"
+
+            termo_intervalo_5h = "almoço" if base_display_5h >= 30 else "intervalo"
+            termo_intervalo_padrao = "almoço" if base_display_padrao >= 30 else "intervalo"
+            termo_intervalo_max = "almoço" if base_display_max >= 30 else "intervalo"
+
+            predictions_html = f"""<div class='section-container'><h3>Previsões de Entrada</h3><div class="predictions-grid-container"><div class="metric-custom metric-minimo"><div class="label">Mínimo {texto_desc_5h}</div><div class="value">{hora_entrada_5h.strftime('%H:%M')}</div><div class="details">{base_display_5h:.0f}min de {termo_intervalo_5h}{texto_detalhe_extra}</div></div><div class="metric-custom metric-padrao"><div class="label">Entrada Padrão {texto_desc_padrao}</div><div class="value">{hora_entrada_padrao.strftime('%H:%M')}</div><div class="details">{base_display_padrao:.0f}min de {termo_intervalo_padrao}{texto_detalhe_extra}</div></div><div class="metric-custom metric-maximo"><div class="label">Máximo {texto_desc_10h}</div><div class="value">{hora_entrada_10h.strftime('%H:%M')}</div><div class="details">{base_display_max:.0f}min de {termo_intervalo_max}{texto_detalhe_extra}</div></div></div></div>"""
+            
+            with results_placeholder.container():
+                final_predictions_html = f'<div class="{predictions_container_class}">{predictions_html}</div>'
+                st.markdown(f'<div class="results-container">{final_predictions_html}</div>', unsafe_allow_html=True)
+                if aviso_impossivel_5h:
+                     st.markdown(aviso_impossivel_5h, unsafe_allow_html=True)
             st.components.v1.html("""<script>setTimeout(function() { const resultsEl = window.parent.document.querySelector('.results-container'); if (resultsEl) { resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 100);</script>""", height=0)
 
         except ValueError as e:
